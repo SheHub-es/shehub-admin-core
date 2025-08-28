@@ -3,62 +3,47 @@
 import { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface LoginFormProps {
   onRestart?: () => void;
 }
 
 export default function LoginForm({ onRestart }: LoginFormProps) {
+  const router = useRouter(); // ✅
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [errors, setErrors] = useState({
-    email: '',
-    password: ''
-  });
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({ email: '', password: '' });
 
   const validateForm = () => {
     const newErrors = { email: '', password: '' };
-    
-    if (!formData.email) {
-      newErrors.email = 'El email es requerido';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email no válido';
-    }
-    
-    if (!formData.password) {
-      newErrors.password = 'La contraseña es requerida';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
-    }
-    
+    if (!formData.email) newErrors.email = 'El email es requerido';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email no válido';
+    if (!formData.password) newErrors.password = 'La contraseña es requerida';
+    else if (formData.password.length < 6) newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
     setErrors(newErrors);
     return !newErrors.email && !newErrors.password;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
     if (!validateForm()) return;
-    
     setIsLoading(true);
-    
     try {
-      // Simular llamada a API
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      // Aquí iría la lógica real de autenticación
-      console.log('Login attempt:', formData);
-      
-      // Simulamos éxito por ahora
-      alert('¡Login exitoso! 🎉');
-      
-    } catch (error) {
-      console.error('Login error:', error);
-      alert('Error en el login. Intenta de nuevo.');
+      const res = await fetch('/admin/test', {
+        headers: { Authorization: 'Basic ' + btoa(`${formData.email}:${formData.password}`) },
+        cache: 'no-store',
+      });
+      if (!res.ok) throw new Error('Auth failed');
+
+      // Demo only
+      sessionStorage.setItem('demo_email', formData.email);
+      sessionStorage.setItem('demo_pass',  formData.password);
+
+      router.push('/admin'); // ✅ navega al panel
+    } catch {
+      setErrors(prev => ({ ...prev, password: 'Credenciales inválidas o sin acceso' }));
     } finally {
       setIsLoading(false);
     }
