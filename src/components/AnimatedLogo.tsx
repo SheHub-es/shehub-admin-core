@@ -1,6 +1,7 @@
 "use client";
 
 import { gsap } from "gsap";
+import { TextPlugin } from "gsap/TextPlugin";
 import Image from "next/image";
 import {
   useCallback,
@@ -9,6 +10,9 @@ import {
   useRef,
   useState,
 } from "react";
+
+// Registrar el plugin de texto
+gsap.registerPlugin(TextPlugin);
 
 interface AnimatedLogoProps {
   onAnimationComplete: () => void;
@@ -25,12 +29,20 @@ export default function AnimatedLogo({
   const linesRef = useRef<HTMLDivElement>(null);
   const skipBtnRef = useRef<HTMLButtonElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
+  const communityLinesRef = useRef<HTMLDivElement>(null);
 
   const tlRef = useRef<gsap.core.Timeline | null>(null);
   const skipDelayRef = useRef<gsap.core.Tween | null>(null);
   const mmRef = useRef<gsap.MatchMedia | null>(null);
 
   const [shouldSkip, setShouldSkip] = useState(false);
+
+  // Textos para typewriter
+  const texts = [
+    "Construyendo comunidad",
+    "Empoderando mujeres", 
+    "Creando futuro"
+  ];
 
   // Reduce motion / skip
   useEffect(() => {
@@ -102,8 +114,10 @@ export default function AnimatedLogo({
             logoBreath: 1.0,
             settle: 0.25,
             textsIn: isMobile ? 0.5 : 0.7,
+            typewriter: 1.4, // Más lento y pausado
             gap: 0.1,
             lines: 0.4,
+            communityLines: 0.6, // Para las líneas de comunidad
             glow: 0.8,
             pause: isMobile ? 0.1 : 0.2,
             explode: isMobile ? 1.1 : 1.3,
@@ -132,6 +146,7 @@ export default function AnimatedLogo({
               ...textLines,
               linesRef.current,
               glowRef.current,
+              communityLinesRef.current,
             ],
             {
               willChange: "transform, opacity",
@@ -140,21 +155,29 @@ export default function AnimatedLogo({
             }
           );
 
-          // Estados iniciales 
+          // Estados iniciales - TU VERSIÓN ORIGINAL
           gsap.set(textLines, {
             autoAlpha: 0,
             y: 25,
             scale: 0.96,
-            rotationX: 5, // Leve perspectiva 3D
+            rotationX: 5,
           });
+          
+          // Configuración inicial para typewriter - textos vacíos
+          textLines.forEach((line, i) => {
+            line.textContent = ""; // Empezar con texto vacío
+            line.setAttribute('data-text', texts[i]); // Guardar texto original
+          });
+          
           gsap.set(linesRef.current, { autoAlpha: 0 });
           gsap.set(glowRef.current, { autoAlpha: 0, scale: 0.8 });
+          gsap.set(communityLinesRef.current, { autoAlpha: 0 });
 
           const tl = gsap.timeline({ paused: true });
           tlRef.current = tl;
           tl.eventCallback("onComplete", onAnimationComplete);
 
-          // 1) ENTRADA LOGO
+          // 1) ENTRADA LOGO - TU VERSION ORIGINAL
           tl.fromTo(
             logoRef.current,
             {
@@ -173,7 +196,7 @@ export default function AnimatedLogo({
             0
           )
 
-            // Resplandor sutil del logo
+            // Resplandor sutil del logo - TU VERSION
             .to(
               glowRef.current,
               {
@@ -185,7 +208,7 @@ export default function AnimatedLogo({
               DUR.logoIn * 0.4
             )
 
-            // Asentamiento suave con respiración
+            // Asentamiento suave con respiración - TU VERSION
             .to(
               logoRef.current,
               {
@@ -196,7 +219,7 @@ export default function AnimatedLogo({
               DUR.logoIn
             )
 
-            // Respiración muy sutil del logo
+            // Respiración muy sutil del logo - TU VERSION
             .to(
               logoRef.current,
               {
@@ -209,7 +232,7 @@ export default function AnimatedLogo({
               DUR.logoIn + DUR.settle
             );
 
-          // 2) ENTRADA TEXTOS
+          // 2) ENTRADA TEXTOS CON TYPEWRITER - NUEVO
           tl.to(
             textLines,
             {
@@ -227,7 +250,20 @@ export default function AnimatedLogo({
             DUR.logoIn + 0.2
           );
 
-          // 3) Líneas decorativas más orgánicas
+          // Efecto typewriter para cada texto - más pausado
+          textLines.forEach((line, i) => {
+            const text = texts[i];
+            tl.to(line, {
+              text: {
+                value: text,
+                delimiter: ""
+              },
+              duration: DUR.typewriter,
+              ease: "none",
+            }, DUR.logoIn + 0.6 + (i * 0.5)); // Mayor delay entre textos
+          });
+
+          // 3) Líneas decorativas originales - TU VERSION
           tl.to(
             q(".network-line"),
             {
@@ -244,10 +280,39 @@ export default function AnimatedLogo({
             ">-0.4"
           );
 
-          // 4) PAUSA contemplativa
+          // 4) LÍNEAS DE COMUNIDAD - NUEVO
+          tl.to(
+            communityLinesRef.current,
+            {
+              autoAlpha: 1,
+              duration: 0.3,
+              ease: "power2.out",
+            },
+            ">-0.2"
+          )
+          
+          // Líneas de conexión aparecen una por una
+          .to(
+            q(".community-line"),
+            {
+              scaleX: 1,
+              autoAlpha: 1,
+              duration: DUR.communityLines,
+              stagger: {
+                amount: 0.4,
+                from: "center",
+                ease: "power2.out"
+              },
+              transformOrigin: "center center",
+              ease: "power2.out",
+            },
+            ">-0.1"
+          );
+
+          // 5) PAUSA contemplativa - TU VERSION
           tl.to({}, { duration: DUR.pause }, ">+0.2");
 
-          // 5) SALIDA elegante y fluida
+          // 6) SALIDA elegante y fluida - TU VERSION ORIGINAL
           tl.addLabel("explode");
 
           // Logo: crecimiento y desvanecimiento suave
@@ -275,7 +340,7 @@ export default function AnimatedLogo({
             "explode"
           );
 
-          // Textos: dispersión orgánica
+          // Textos: dispersión orgánica - TU VERSION
           tl.to(
             textLines,
             {
@@ -304,9 +369,9 @@ export default function AnimatedLogo({
             "explode+0.05"
           );
 
-          // Líneas se desvanecen suavemente
+          // Líneas se desvanecen suavemente - TODAS LAS LÍNEAS
           tl.to(
-            q(".network-line"),
+            [q(".network-line"), q(".community-line")],
             {
               autoAlpha: 0,
               scaleX: 0.3,
@@ -317,7 +382,7 @@ export default function AnimatedLogo({
             "explode+0.1"
           );
 
-          // 6) Fade final del contenedor
+          // 7) Fade final del contenedor - TU VERSION
           tl.to(
             containerRef.current,
             {
@@ -354,7 +419,7 @@ export default function AnimatedLogo({
       aria-label="Introducción animada"
       style={{ visibility: "hidden" }}
     >
-      {/* Skip Button mejorado */}
+      {/* Skip Button - TU VERSION ORIGINAL */}
       <button
         onClick={(e) => (e.shiftKey ? hardSkip() : softSkip())}
         ref={skipBtnRef}
@@ -368,17 +433,45 @@ export default function AnimatedLogo({
         </span>
       </button>
 
-      {/* Resplandor sutil del logo */}
+      {/* Resplandor sutil del logo - TU VERSION */}
       <div ref={glowRef} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-radial from-purple-200/40 via-pink-100/20 to-transparent rounded-full blur-2xl" />
       </div>
 
-      {/* Líneas decorativas refinadas */}
+      {/* Líneas decorativas originales - TU VERSION */}
       <div ref={linesRef} className="absolute inset-0 pointer-events-none">
         <div className="network-line absolute top-1/4 left-0 w-36 h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent rotate-12 scale-x-0" />
         <div className="network-line absolute top-1/2 right-0 w-28 h-px bg-gradient-to-r from-transparent via-pink-400/60 to-transparent -rotate-12 scale-x-0" />
         <div className="network-line absolute bottom-1/3 left-1/4 w-32 h-px bg-gradient-to-r from-transparent via-orange-400/60 to-transparent rotate-45 scale-x-0" />
         <div className="network-line absolute top-1/3 right-1/4 w-24 h-px bg-gradient-to-r from-transparent via-purple-500/60 to-transparent -rotate-45 scale-x-0" />
+      </div>
+
+      {/* LÍNEAS DE COMUNIDAD - MÁS VISIBLES */}
+      <div ref={communityLinesRef} className="absolute inset-0 pointer-events-none">
+        {/* Líneas que conectan hacia el centro desde diferentes puntos - más gruesas y visibles */}
+        <div className="community-line absolute top-1/3 left-1/6 w-32 h-0.5 bg-gradient-to-r from-purple-400/70 via-purple-500/90 to-purple-300/60 rotate-[25deg] scale-x-0 rounded-full" />
+        <div className="community-line absolute top-2/3 left-1/5 w-36 h-0.5 bg-gradient-to-r from-pink-400/70 via-pink-500/90 to-pink-300/60 rotate-[-35deg] scale-x-0 rounded-full" />
+        <div className="community-line absolute top-1/2 left-1/12 w-40 h-0.5 bg-gradient-to-r from-orange-400/70 via-orange-500/90 to-orange-300/60 rotate-[15deg] scale-x-0 rounded-full" />
+        
+        <div className="community-line absolute top-1/4 right-1/6 w-34 h-0.5 bg-gradient-to-l from-purple-400/70 via-purple-500/90 to-purple-300/60 rotate-[-20deg] scale-x-0 rounded-full" />
+        <div className="community-line absolute top-3/5 right-1/5 w-38 h-0.5 bg-gradient-to-l from-pink-400/70 via-pink-500/90 to-pink-300/60 rotate-[40deg] scale-x-0 rounded-full" />
+        <div className="community-line absolute top-1/2 right-1/12 w-36 h-0.5 bg-gradient-to-l from-orange-400/70 via-orange-500/90 to-orange-300/60 rotate-[-10deg] scale-x-0 rounded-full" />
+        
+        {/* Líneas horizontales que sugieren conexión entre personas - más visibles */}
+        <div className="community-line absolute bottom-1/4 left-1/3 w-28 h-0.5 bg-gradient-to-r from-purple-300/60 via-purple-400/80 to-purple-300/60 scale-x-0 rounded-full" />
+        <div className="community-line absolute top-1/5 right-1/3 w-24 h-0.5 bg-gradient-to-r from-pink-300/60 via-pink-400/80 to-pink-300/60 scale-x-0 rounded-full" />
+        
+        {/* Líneas adicionales para más sensación de red */}
+        <div className="community-line absolute bottom-1/3 right-1/4 w-22 h-0.5 bg-gradient-to-r from-orange-300/60 via-orange-400/80 to-orange-300/60 rotate-[60deg] scale-x-0 rounded-full" />
+        <div className="community-line absolute top-2/5 left-1/8 w-26 h-0.5 bg-gradient-to-r from-purple-300/60 via-purple-400/80 to-purple-300/60 rotate-[-50deg] scale-x-0 rounded-full" />
+        
+        {/* Puntos de conexión que representan personas - más visibles */}
+        <div className="absolute top-1/3 left-1/4 w-1.5 h-1.5 bg-purple-500/80 rounded-full opacity-0 animate-pulse shadow-sm" style={{animationDelay: '1.8s'}} />
+        <div className="absolute top-2/3 right-1/4 w-1.5 h-1.5 bg-pink-500/80 rounded-full opacity-0 animate-pulse shadow-sm" style={{animationDelay: '2.1s'}} />
+        <div className="absolute bottom-1/3 left-1/3 w-1.5 h-1.5 bg-orange-500/80 rounded-full opacity-0 animate-pulse shadow-sm" style={{animationDelay: '2.4s'}} />
+        <div className="absolute top-1/4 right-1/3 w-1.5 h-1.5 bg-purple-600/80 rounded-full opacity-0 animate-pulse shadow-sm" style={{animationDelay: '2.7s'}} />
+        <div className="absolute bottom-1/4 left-2/5 w-1.5 h-1.5 bg-pink-600/80 rounded-full opacity-0 animate-pulse shadow-sm" style={{animationDelay: '3s'}} />
+        <div className="absolute top-1/5 left-2/3 w-1.5 h-1.5 bg-orange-600/80 rounded-full opacity-0 animate-pulse shadow-sm" style={{animationDelay: '3.3s'}} />
       </div>
 
       {/* Contenido principal */}
@@ -398,19 +491,29 @@ export default function AnimatedLogo({
         </div>
 
         <div ref={textWrapperRef} className="space-y-5 will-change-transform">
-          <p className="typewriter-text text-purple-600 font-secondary text-xl md:text-2xl font-medium tracking-wide">
-            Construyendo comunidad
+          {/* TEXTOS CON EFECTO 3D SUTIL Y TYPEWRITER */}
+          <p className="typewriter-text text-purple-600 font-secondary text-xl md:text-2xl font-medium tracking-wide" 
+             style={{ 
+               textShadow: '1px 1px 2px rgba(120, 88, 255, 0.1), 0px 2px 4px rgba(120, 88, 255, 0.05)',
+               filter: 'drop-shadow(0px 1px 1px rgba(120, 88, 255, 0.1))'
+             }}>
           </p>
-          <p className="typewriter-text text-pink-600 font-secondary text-xl md:text-2xl font-medium tracking-wide">
-            Empoderando mujeres
+          <p className="typewriter-text text-pink-600 font-secondary text-xl md:text-2xl font-medium tracking-wide"
+             style={{ 
+               textShadow: '1px 1px 2px rgba(248, 60, 133, 0.1), 0px 2px 4px rgba(248, 60, 133, 0.05)',
+               filter: 'drop-shadow(0px 1px 1px rgba(248, 60, 133, 0.1))'
+             }}>
           </p>
-          <p className="typewriter-text text-orange-600 font-secondary text-xl md:text-2xl font-medium tracking-wide">
-            Creando futuro
+          <p className="typewriter-text text-orange-600 font-secondary text-xl md:text-2xl font-medium tracking-wide"
+             style={{ 
+               textShadow: '1px 1px 2px rgba(247, 103, 2, 0.1), 0px 2px 4px rgba(247, 103, 2, 0.05)',
+               filter: 'drop-shadow(0px 1px 1px rgba(247, 103, 2, 0.1))'
+             }}>
           </p>
         </div>
       </div>
 
-      {/* Partículas minimalistas y elegantes solo desktop */}
+      {/* Partículas minimalistas - TU VERSION ORIGINAL */}
       <div className="absolute inset-0 pointer-events-none hidden md:block">
         <div className="absolute w-2.5 h-2.5 bg-purple-300/50 rounded-full top-1/4 left-1/3 animate-pulse backdrop-blur-sm" />
         <div
