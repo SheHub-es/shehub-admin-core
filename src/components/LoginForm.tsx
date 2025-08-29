@@ -41,7 +41,7 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
       sessionStorage.setItem('demo_email', formData.email);
       sessionStorage.setItem('demo_pass',  formData.password);
 
-      router.push('/admin'); // ✅ navega al panel
+      router.push('/dashboard'); // ✅ navega al panel
     } catch {
       setErrors(prev => ({ ...prev, password: 'Credenciales inválidas o sin acceso' }));
     } finally {
