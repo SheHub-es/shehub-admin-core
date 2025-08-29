@@ -1,7 +1,7 @@
 // src/features/hooks/useApplicants.ts
 
-import { getApplicants } from '@features/applicants/api/applicants.api';
-import type { Applicant } from '@features/types/applicant.types';
+import { ApplicantAPI } from '../applicants/api/applicants.api';
+import type { Applicant } from '../types/applicant.types';
 import { useCallback, useEffect, useState } from 'react';
 
 // Datos mock para fallback
@@ -112,11 +112,9 @@ export const useApplicants = () => {
 
     setLoading(true);
     try {
-      const data = await getApplicants(email, pass, 0, 100);
+      const data = await ApplicantAPI.getAllApplicants(email, pass);
       console.log('Datos recibidos de la API:', data);
-      const normalizedData = normalizeApiData(data);
-      console.log('Datos normalizados:', normalizedData);
-      setRows(normalizedData);
+      setRows(data);
       setError('');
     } catch (err: unknown) {
       console.error('Error al cargar applicants:', err);

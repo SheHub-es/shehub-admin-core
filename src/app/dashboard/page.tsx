@@ -25,9 +25,10 @@ import { useEffect, useState } from 'react';
 import { Applicant, TabType, UserInfo } from '../../features/types/applicant.types';
 
 // Import hooks
-import { useApplicantFilter } from '../../features/hooks/useApplicantFilter';
 import { useApplicants } from '../../features/hooks/useApplicants';
+import { useApplicantFilter } from '../../features/hooks/useApplicantFilter';
 import { useApplicantStats } from '../../features/hooks/useApplicantStats';
+import { useApplicantServerStats } from '../../features/hooks/useApplicantServerStats';
 
 // Import utils
 import { formatDate, getUserInitials } from '../../features/applicants/utils/applicant.utils';
@@ -42,10 +43,39 @@ export default function Dashboard() {
     role: 'ADMIN' 
   });
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
+
+  // Get current user credentials for API calls - with proper checks
+  const [credentials, setCredentials] = useState<{email: string, password: string}>({
+    email: '',
+    password: ''
+  });
+  
+  // Initialize credentials from sessionStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const email = sessionStorage.getItem('demo_email') || '';
+      const password = sessionStorage.getItem('demo_password') || '';
+      setCredentials({ email, password });
+    }
+  }, []);
   
   // Using custom hooks
   const { rows: applicants, loading, error, reload } = useApplicants();
-  const stats = useApplicantStats(applicants);
+  
+  // Client-side stats as fallback
+  const clientStats = useApplicantStats(applicants);
+  
+  // Use server-side statistics only when credentials are available
+  const { 
+    stats: serverStats, 
+    loading: statsLoading, 
+    error: statsError, 
+    refetch: refetchStats 
+  } = useApplicantServerStats(credentials.email, credentials.password);
+
+  // Use server stats if available and no error, otherwise use client stats
+  const stats = (!statsError && credentials.email && credentials.password) ? serverStats : clientStats;
+  
   const { 
     activeTab, 
     setActiveTab, 
@@ -53,6 +83,14 @@ export default function Dashboard() {
     setSearchTerm, 
     filteredApplicants 
   } = useApplicantFilter(applicants);
+
+  // Combined reload function for both applicants and statistics
+  const reloadAll = async () => {
+    await Promise.all([
+      reload(),
+      refetchStats()
+    ]);
+  };
 
   // Función para obtener info del usuario actual
   const getCurrentUserInfo = (): UserInfo => {
@@ -249,18 +287,49 @@ export default function Dashboard() {
         <header className="bg-[var(--color-header-bg)] border-b border-gray-200 px-8 py-6 shadow-[var(--color-header-shadow)]">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-[var(--color-foreground)]">
-                {getGreeting()}, {currentUser.displayName}
-              </h1>
+              <div className="flex items-center space-x-3">
+                <h1 className="text-2xl font-bold text-[var(--color-foreground)]">
+                  {getGreeting()}, {currentUser.displayName}
+                </h1>
+                {/* Stats source indicator */}
+                <div className="flex items-center space-x-1">
+                  {statsLoading ? (
+                    <div className="flex items-center text-xs text-[var(--color-warning)]">
+                      <Clock className="w-3 h-3 mr-1" />
+                      Cargando stats...
+                    </div>
+                  ) : statsError ? (
+                    <div className="flex items-center text-xs text-[var(--color-muted)]" title="Usando estadísticas del cliente como fallback">
+                      <Users className="w-3 h-3 mr-1" />
+                      Cliente
+                    </div>
+                  ) : credentials.email && credentials.password ? (
+                    <div className="flex items-center text-xs text-[var(--color-success)]" title="Estadísticas del servidor en tiempo real">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Servidor
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-xs text-[var(--color-muted)]" title="Usando estadísticas del cliente">
+                      <Users className="w-3 h-3 mr-1" />
+                      Cliente
+                    </div>
+                  )}
+                </div>
+              </div>
               <p className="mt-1 text-[var(--color-muted)]">Gestiona las solicitudes de acceso a SheHub</p>
             </div>
             <div className="flex items-center space-x-4">
               <button 
-                onClick={reload}
-                className="p-2 text-[var(--color-icon-default)] hover:text-[var(--color-icon-hover)] hover:bg-[var(--color-primary-hover)] rounded-lg transition-colors focus-square"
-                title="Actualizar datos"
+                onClick={reloadAll}
+                disabled={loading || statsLoading}
+                className={`p-2 rounded-lg transition-colors focus-square ${
+                  loading || statsLoading 
+                    ? 'text-gray-400 cursor-not-allowed' 
+                    : 'text-[var(--color-icon-default)] hover:text-[var(--color-icon-hover)] hover:bg-[var(--color-primary-hover)]'
+                }`}
+                title="Actualizar datos y estadísticas"
               >
-                <RefreshCw className="w-5 h-5" />
+                <RefreshCw className={`w-5 h-5 ${(loading || statsLoading) ? 'animate-spin' : ''}`} />
               </button>
               <button 
                 className="px-4 py-2 rounded-lg text-[var(--color-button-primary-primary-text)] bg-[var(--color-button-primary-primary-bg-default)] hover:bg-[var(--color-button-primary-primary-bg-hover)] hover:text-[var(--color-button-primary-primary-text-hover)] transition-colors flex items-center space-x-2 focus-square"
@@ -275,6 +344,24 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="px-8 py-6">
+          {/* Error indicator for statistics */}
+          {statsError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center space-x-2">
+                <div className="w-4 h-4 bg-red-500 rounded-full flex-shrink-0"></div>
+                <p className="text-sm text-red-700">
+                  Error cargando estadísticas del servidor: {statsError}
+                </p>
+                <button 
+                  onClick={refetchStats}
+                  className="ml-auto text-red-600 hover:text-red-800 underline text-sm"
+                >
+                  Reintentar
+                </button>
+              </div>
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-[var(--color-card-white-bg-default)] p-6 rounded-lg border border-gray-200 fade-in shadow-[var(--color-card-shadow-default)] hover:shadow-[var(--color-card-shadow-hover)] transition-shadow duration-200">
               <div className="flex items-center space-x-3">
@@ -283,7 +370,12 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm text-[var(--color-card-white-description)] font-medium">Total Solicitudes</p>
-                  <p className="text-2xl font-bold text-[var(--color-card-white-title)]">{stats.total}</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-2xl font-bold text-[var(--color-card-white-title)]">
+                      {statsLoading ? '...' : stats.total}
+                    </p>
+                    {statsLoading && <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>}
+                  </div>
                 </div>
               </div>
             </div>
@@ -296,7 +388,12 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm text-[var(--color-card-white-description)] font-medium">Pendientes</p>
                   <p className="text-xs text-[var(--color-muted)]">(de convertirse en usuarios)</p>
-                  <p className="text-2xl font-bold text-[var(--color-card-white-title)]">{stats.pending}</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-2xl font-bold text-[var(--color-card-white-title)]">
+                      {statsLoading ? '...' : stats.pending}
+                    </p>
+                    {statsLoading && <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>}
+                  </div>
                 </div>
               </div>
             </div>
@@ -309,7 +406,12 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm text-[var(--color-card-white-description)] font-medium">Registradas</p>
                   <p className="text-xs text-[var(--color-muted)]">(ya convertidas en usuarios)</p>
-                  <p className="text-2xl font-bold text-[var(--color-card-white-title)]">{stats.converted}</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-2xl font-bold text-[var(--color-card-white-title)]">
+                      {statsLoading ? '...' : stats.converted}
+                    </p>
+                    {statsLoading && <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>}
+                  </div>
                 </div>
               </div>
             </div>
@@ -320,8 +422,13 @@ export default function Dashboard() {
                   <Star className="w-6 h-6 text-[var(--color-secondary)]" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Mentores</p>
-                  <p className="text-2xl font-bold text-gray-900">{stats.mentors}</p>
+                  <p className="text-sm text-[var(--color-card-white-description)] font-medium">Mentoras</p>
+                  <div className="flex items-center space-x-2">
+                    <p className="text-2xl font-bold text-[var(--color-card-white-title)]">
+                      {statsLoading ? '...' : stats.mentors}
+                    </p>
+                    {statsLoading && <div className="w-4 h-4 border-2 border-pink-600 border-t-transparent rounded-full animate-spin"></div>}
+                  </div>
                 </div>
               </div>
             </div>
