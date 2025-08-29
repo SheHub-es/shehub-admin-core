@@ -112,16 +112,22 @@ export const useApplicants = () => {
 
     setLoading(true);
     try {
+      console.log('Intentando cargar applicants desde el servidor...');
       const data = await ApplicantAPI.getAllApplicants(email, pass);
       console.log('Datos recibidos de la API:', data);
       setRows(data);
       setError('');
     } catch (err: unknown) {
-      console.error('Error al cargar applicants:', err);
+      console.error('Error detallado al cargar applicants:', {
+        error: err,
+        message: err instanceof Error ? err.message : 'Error desconocido',
+        stack: err instanceof Error ? err.stack : undefined
+      });
+      
       // Si falla la API, usar datos simulados como fallback
-      console.log('Usando datos simulados como fallback');
+      console.log('Usando datos simulados como fallback debido al error del servidor');
       setRows(mockData);
-      setError('');
+      setError('Error del servidor. Usando datos de respaldo.');
     } finally {
       setLoading(false);
     }

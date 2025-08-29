@@ -33,6 +33,9 @@ import { useApplicantServerStats } from '../../features/hooks/useApplicantServer
 // Import utils
 import { formatDate, getUserInitials } from '../../features/applicants/utils/applicant.utils';
 
+// Import diagnostic component
+import { ServerDiagnostic } from '../../components/ServerDiagnostic';
+
 export default function Dashboard() {
   const router = useRouter();
   
@@ -43,6 +46,7 @@ export default function Dashboard() {
     role: 'ADMIN' 
   });
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
 
   // Get current user credentials for API calls - with proper checks
   const [credentials, setCredentials] = useState<{email: string, password: string}>({
@@ -185,12 +189,20 @@ export default function Dashboard() {
             <strong className="font-bold">Error: </strong>
             <span className="block sm:inline">{error}</span>
           </div>
-          <button 
-            onClick={reload}
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-          >
-            Reintentar
-          </button>
+          <div className="flex gap-3 justify-center">
+            <button 
+              onClick={reload}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Reintentar
+            </button>
+            <button 
+              onClick={() => setShowDiagnostic(true)}
+              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+            >
+              Diagnóstico
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -352,12 +364,20 @@ export default function Dashboard() {
                 <p className="text-sm text-red-700">
                   Error cargando estadísticas del servidor: {statsError}
                 </p>
-                <button 
-                  onClick={refetchStats}
-                  className="ml-auto text-red-600 hover:text-red-800 underline text-sm"
-                >
-                  Reintentar
-                </button>
+                <div className="ml-auto flex gap-2">
+                  <button 
+                    onClick={refetchStats}
+                    className="text-red-600 hover:text-red-800 underline text-sm"
+                  >
+                    Reintentar
+                  </button>
+                  <button 
+                    onClick={() => setShowDiagnostic(true)}
+                    className="text-red-600 hover:text-red-800 underline text-sm"
+                  >
+                    Diagnóstico
+                  </button>
+                </div>
               </div>
             </div>
           )}
@@ -702,6 +722,11 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Server Diagnostic Modal */}
+      {showDiagnostic && (
+        <ServerDiagnostic onClose={() => setShowDiagnostic(false)} />
       )}
     </div>
   );

@@ -41,8 +41,28 @@ export class ApplicantAPI {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error ${response.status}: ${errorText}`);
+      try {
+        const errorText = await response.text();
+        let errorData;
+        
+        try {
+          errorData = JSON.parse(errorText);
+        } catch {
+          errorData = errorText;
+        }
+        
+        console.error(`API Error Details:`, {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.url,
+          data: errorData
+        });
+        
+        throw new Error(`API Error ${response.status}: ${errorText}`);
+      } catch (readError) {
+        console.error(`Failed to read error response:`, readError);
+        throw new Error(`API Error ${response.status}: Unable to read error details`);
+      }
     }
 
     const contentType = response.headers.get('content-type');
@@ -54,6 +74,27 @@ export class ApplicantAPI {
   }
 
   // ============ READ OPERATIONS ============
+
+  /**
+   * Check server connectivity and health
+   */
+  static async checkServerHealth(): Promise<{ status: string; timestamp: string }> {
+    try {
+      const response = await fetch(`${API_BASE}/actuator/health`, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      
+      if (response.ok) {
+        return response.json();
+      } else {
+        throw new Error(`Health check failed: ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Server health check failed:', error);
+      throw error;
+    }
+  }
 
   /**
    * Get all active applicants
