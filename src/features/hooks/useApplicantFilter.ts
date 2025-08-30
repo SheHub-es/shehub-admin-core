@@ -19,13 +19,19 @@ export const useApplicantFilter = (applicants: Applicant[]) => {
           matchesTab = true;
           break;
         case 'pending':
-          matchesTab = applicant.userId === null; // En lista de espera
+          matchesTab = applicant.userId === null;
           break;
         case 'converted':
-          matchesTab = applicant.userId !== null; // Registradas como usuarias
+          matchesTab = applicant.userId !== null;
           break;
         case 'mentors':
-          matchesTab = applicant.mentor === true; // Mentores
+          matchesTab = applicant.mentor === true;
+          break;
+        case 'colaboradoras':
+          matchesTab = applicant.mentor === false;
+          break;
+        default:
+          matchesTab = true;
           break;
       }
       

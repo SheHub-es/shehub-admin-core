@@ -1,290 +1,85 @@
-// src/features/applicants/api/applicants.api.ts
+// src/lib/api.ts
+const BASE = process.env.NEXT_PUBLIC_API_URL || ''; // '' si usas rewrites de Next
 
-import { Applicant, ApplicantStats } from '../types/applicant.types';
+export function basicAuthHeader(email: string, password: string) {
+  // Asume entorno cliente (btoa disponible). No usar en Server Components.
+  return { Authorization: `Basic ${btoa(`${email}:${password}`)}` };
+}
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
+async function parse<T = unknown>(res: Response): Promise<T | string> {
+  const ct = res.headers.get('content-type') || '';
+  if (ct.includes('application/json')) return res.json();
+  return res.text();
+}
 
-export class ApplicantAPI {
+export async function adminTest(email: string, password: string) {
+  const res = await fetch(`${BASE}/admin/test`, {
+    headers: basicAuthHeader(email, password),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(`Auth failed: ${res.status} ${res.statusText}`);
+  return parse(res);
+}
+
+export async function getApplicants(
+  email: string,
+  password: string,
+  page = 0,
+  size = 10
+) {
+  const res = await fetch(`${BASE}/admin/applicants?page=${page}&size=${size}`, {
+    headers: basicAuthHeader(email, password),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // aquí sí sabemos que es JSON (Page<>)
+}
+
+export async function getTotalApplicants(email: string, password: string) {
+  const res = await fetch(`${BASE}/applicants/count`, {
+    headers: basicAuthHeader(email, password),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getMentorsCount(email: string, password: string) {
+  const res = await fetch(`${BASE}/applicants/count/mentor/true`, {
+    headers: basicAuthHeader(email, password),
+    cache: 'no-store',
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+export async function getApplicantStats(email: string, password: string) {
+  console.log('🔄 Iniciando petición de estadísticas...');
+  console.log('📍 URL base:', BASE);
+  console.log('🔗 URL completa:', `${BASE}/applicants/stats`);
   
-  /**
-   * Creates Basic Auth header for API requests
-   */
-  private static getAuthHeader(email: string, password: string) {
-    return {
-      'Authorization': `Basic ${btoa(`${email}:${password}`)}`,
-      'Content-Type': 'application/json'
-    };
+  // Solicitar estadísticas directamente
+  console.log('📊 Solicitando estadísticas del servidor...');
+  const res = await fetch(`${BASE}/applicants/stats`, {
+    headers: basicAuthHeader(email, password),
+    cache: 'no-store',
+  });
+  
+  console.log('📈 Respuesta del servidor stats:', {
+    ok: res.ok,
+    status: res.status,
+    statusText: res.statusText,
+    url: res.url
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.log('❌ Error del servidor stats:', errorText);
+    throw new Error(`Server stats error: ${res.status} ${res.statusText} - ${errorText}`);
   }
 
-  /**
-   * Generic HTTP request handler with proper error handling
-   */
-  private static async request<T>(
-    url: string, 
-    options: RequestInit = {},
-    email?: string,
-    password?: string
-  ): Promise<T> {
-    const headers: HeadersInit = {};
-    
-    if (email && password) {
-      Object.assign(headers, this.getAuthHeader(email, password));
-    }
-    
-    const response = await fetch(`${API_BASE}${url}`, {
-      ...options,
-      headers: {
-        ...headers,
-        ...options.headers
-      },
-      cache: 'no-store'
-    });
-
-    if (!response.ok) {
-      try {
-        const errorText = await response.text();
-        let errorData;
-        
-        try {
-          errorData = JSON.parse(errorText);
-        } catch {
-          errorData = errorText;
-        }
-        
-        console.error(`API Error Details:`, {
-          status: response.status,
-          statusText: response.statusText,
-          url: response.url,
-          data: errorData
-        });
-        
-        throw new Error(`API Error ${response.status}: ${errorText}`);
-      } catch (readError) {
-        console.error(`Failed to read error response:`, readError);
-        throw new Error(`API Error ${response.status}: Unable to read error details`);
-      }
-    }
-
-    const contentType = response.headers.get('content-type');
-    if (contentType && contentType.includes('application/json')) {
-      return response.json();
-    }
-    
-    return response.text() as Promise<T>;
-  }
-
-  // ============ READ OPERATIONS ============
-
-  /**
-   * Check server connectivity and health
-   */
-  static async checkServerHealth(): Promise<{ status: string; timestamp: string }> {
-    try {
-      const response = await fetch(`${API_BASE}/actuator/health`, {
-        method: 'GET',
-        cache: 'no-store'
-      });
-      
-      if (response.ok) {
-        return response.json();
-      } else {
-        throw new Error(`Health check failed: ${response.status}`);
-      }
-    } catch (error) {
-      console.error('Server health check failed:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get all active applicants
-   */
-  static async getAllApplicants(email: string, password: string): Promise<Applicant[]> {
-    return this.request<Applicant[]>('/api/applicants', {}, email, password);
-  }
-
-  /**
-   * Get paginated applicants
-   */
-  static async getPaginatedApplicants(
-    email: string, 
-    password: string,
-    page = 0, 
-    size = 20
-  ): Promise<{
-    content: Applicant[];
-    totalElements: number;
-    totalPages: number;
-    size: number;
-    number: number;
-  }> {
-    return this.request(
-      `/api/applicants/paginated?page=${page}&size=${size}&sort=id,desc`, 
-      {}, 
-      email, 
-      password
-    );
-  }
-
-  /**
-   * Get applicant by ID
-   */
-  static async getById(id: number, email: string, password: string): Promise<Applicant> {
-    return this.request<Applicant>(`/api/applicants/${id}`, {}, email, password);
-  }
-
-  /**
-   * Get pending applicants (not yet converted to users)
-   */
-  static async getPendingApplicants(email: string, password: string): Promise<Applicant[]> {
-    return this.request<Applicant[]>('/api/applicants/pending', {}, email, password);
-  }
-
-  /**
-   * Get available roles for selection
-   */
-  static async getAvailableRoles(email: string, password: string): Promise<string[]> {
-    return this.request<string[]>('/api/applicants/roles/available', {}, email, password);
-  }
-
-  // ============ STATISTICS ENDPOINTS ============
-
-  /**
-   * Get total count of applicants
-   */
-  static async getTotalCount(email: string, password: string): Promise<number> {
-    return this.request<number>('/api/applicants/count', {}, email, password);
-  }
-
-  /**
-   * Get count by mentor flag
-   */
-  static async getCountByMentor(mentor: boolean, email: string, password: string): Promise<number> {
-    return this.request<number>(`/api/applicants/count/mentor/${mentor}`, {}, email, password);
-  }
-
-  /**
-   * Get count by language
-   */
-  static async getCountByLanguage(language: string, email: string, password: string): Promise<number> {
-    return this.request<number>(`/api/applicants/count/language/${language}`, {}, email, password);
-  }
-
-  /**
-   * Get comprehensive statistics for dashboard
-   */
-  static async getStatistics(email: string, password: string): Promise<ApplicantStats> {
-    try {
-      // Make parallel requests for better performance
-      const [
-        total,
-        mentors,
-        allApplicants
-      ] = await Promise.all([
-        this.getTotalCount(email, password),
-        this.getCountByMentor(true, email, password),
-        this.getAllApplicants(email, password)
-      ]);
-
-      // Calculate converted (those with userId) and pending from all applicants
-      const converted = allApplicants.filter(a => a.userId).length;
-      const pending = total - converted;
-
-      return {
-        total,
-        mentors,
-        pending,
-        converted
-      };
-    } catch (error) {
-      console.error('Error fetching statistics:', error);
-      throw error;
-    }
-  }
-
-  // ============ CRUD OPERATIONS ============
-
-  /**
-   * Create new applicant
-   */
-  static async create(applicant: Omit<Applicant, 'id'>, email: string, password: string): Promise<Applicant> {
-    return this.request<Applicant>('/api/applicants', {
-      method: 'POST',
-      body: JSON.stringify(applicant)
-    }, email, password);
-  }
-
-  /**
-   * Update applicant by ID
-   */
-  static async update(id: number, applicant: Partial<Applicant>, email: string, password: string): Promise<Applicant> {
-    return this.request<Applicant>(`/api/applicants/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(applicant)
-    }, email, password);
-  }
-
-  /**
-   * Delete applicant by ID (soft delete)
-   */
-  static async delete(id: number, email: string, password: string): Promise<void> {
-    return this.request<void>(`/api/applicants/${id}`, {
-      method: 'DELETE'
-    }, email, password);
-  }
-
-  /**
-   * Convert applicant to user
-   */
-  static async convertToUser(applicantId: number, userId: number, email: string, password: string): Promise<Applicant> {
-    return this.request<Applicant>(
-      `/api/applicants/${applicantId}/convert-to-user?userId=${userId}`, 
-      {
-        method: 'PUT'
-      }, 
-      email, 
-      password
-    );
-  }
-
-  // ============ FILTERING ENDPOINTS ============
-
-  /**
-   * Filter applicants by language
-   */
-  static async getByLanguage(language: string, email: string, password: string): Promise<Applicant[]> {
-    return this.request<Applicant[]>(`/api/applicants/language/${language}`, {}, email, password);
-  }
-
-  /**
-   * Filter applicants by mentor flag
-   */
-  static async getByMentor(mentor: boolean, email: string, password: string): Promise<Applicant[]> {
-    return this.request<Applicant[]>(`/api/applicants/mentor/${mentor}`, {}, email, password);
-  }
-
-  /**
-   * Check if email exists
-   */
-  static async emailExists(email: string, authEmail: string, password: string): Promise<boolean> {
-    return this.request<boolean>(`/api/applicants/exists?email=${encodeURIComponent(email)}`, {}, authEmail, password);
-  }
-
-  // ============ ADMIN OPERATIONS ============
-
-  /**
-   * Get expired deleted applicants
-   */
-  static async getExpiredDeleted(email: string, password: string): Promise<Applicant[]> {
-    return this.request<Applicant[]>('/api/applicants/admin/expired-deleted', {}, email, password);
-  }
-
-  /**
-   * Cleanup expired applicants
-   */
-  static async cleanupExpired(email: string, password: string): Promise<number> {
-    return this.request<number>('/api/applicants/admin/cleanup-expired', {
-      method: 'DELETE'
-    }, email, password);
-  }
+  // Parsear respuesta
+  const data = await res.json();
+  console.log('✅ Estadísticas recibidas del servidor:', data);
+  return data;
 }

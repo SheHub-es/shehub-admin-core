@@ -1,30 +1,36 @@
 // src/features/types/applicant.types.ts
+export type Language = 'ES' | 'EN' | 'CAT' | 'EN_GB' | 'EN_US';
 
-export type Applicant = {
+export interface Applicant {
   id: number;
   email: string;
   firstName: string;
   lastName: string;
   mentor: boolean;
+  displayRole: string;
+  language: Language; // ✅ Usar el enum correcto
   roles: string[];
-  language?: 'SPANISH' | 'ENGLISH' | 'CATALAN';
   timestamp: string;
   deleted: boolean;
-  userId?: number | null;
-  deletedAt?: string | null;
-};
+  deletedAt: string | null;
+  userId: number | null;
+}
 
-export type TabType = 'all' | 'pending' | 'converted' | 'mentors';
 
-export type UserInfo = {
-  email: string;
-  role: string;
-  displayName: string;
-};
-
-export type ApplicantStats = {
+// ✅ Agregar interfaz para las estadísticas
+export interface ApplicantStats {
   total: number;
-  pending: number;
-  converted: number;
-  mentors: number;
-};
+  pending: number;  // Aplicantes que no han sido convertidos a usuarios
+  converted: number; // Aplicantes ya convertidos a usuarios  
+  mentors: number;   // Total de mentores
+  colaboradoras: number; // Total de colaboradoras
+}
+
+// ✅ Agregar tipos auxiliares
+export type TabType = 'all' | 'pending' | 'converted' | 'mentors' | 'colaboradoras';
+
+export interface UserInfo {
+  email: string;
+  displayName: string;
+  role: string;
+}

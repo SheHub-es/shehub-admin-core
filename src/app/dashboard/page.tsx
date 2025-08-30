@@ -25,16 +25,13 @@ import { useEffect, useState } from 'react';
 import { Applicant, TabType, UserInfo } from '../../features/types/applicant.types';
 
 // Import hooks
-import { useApplicants } from '../../features/hooks/useApplicants';
 import { useApplicantFilter } from '../../features/hooks/useApplicantFilter';
+import { useApplicants } from '../../features/hooks/useApplicants';
 import { useApplicantStats } from '../../features/hooks/useApplicantStats';
-import { useApplicantServerStats } from '../../features/hooks/useApplicantServerStats';
 
 // Import utils
 import { formatDate, getUserInitials } from '../../features/applicants/utils/applicant.utils';
-
-// Import diagnostic component
-import { ServerDiagnostic } from '../../components/ServerDiagnostic';
+import { getLanguageDisplay, getLanguageFlag } from '../../features/applicants/utils/language.utils';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -46,40 +43,10 @@ export default function Dashboard() {
     role: 'ADMIN' 
   });
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null);
-  const [showDiagnostic, setShowDiagnostic] = useState(false);
-
-  // Get current user credentials for API calls - with proper checks
-  const [credentials, setCredentials] = useState<{email: string, password: string}>({
-    email: '',
-    password: ''
-  });
-  
-  // Initialize credentials from sessionStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const email = sessionStorage.getItem('demo_email') || '';
-      const password = sessionStorage.getItem('demo_password') || '';
-      setCredentials({ email, password });
-    }
-  }, []);
   
   // Using custom hooks
   const { rows: applicants, loading, error, reload } = useApplicants();
-  
-  // Client-side stats as fallback
-  const clientStats = useApplicantStats(applicants);
-  
-  // Use server-side statistics only when credentials are available
-  const { 
-    stats: serverStats, 
-    loading: statsLoading, 
-    error: statsError, 
-    refetch: refetchStats 
-  } = useApplicantServerStats(credentials.email, credentials.password);
-
-  // Use server stats if available and no error, otherwise use client stats
-  const stats = (!statsError && credentials.email && credentials.password) ? serverStats : clientStats;
-  
+  const stats = useApplicantStats(applicants);
   const { 
     activeTab, 
     setActiveTab, 
@@ -87,14 +54,6 @@ export default function Dashboard() {
     setSearchTerm, 
     filteredApplicants 
   } = useApplicantFilter(applicants);
-
-  // Combined reload function for both applicants and statistics
-  const reloadAll = async () => {
-    await Promise.all([
-      reload(),
-      refetchStats()
-    ]);
-  };
 
   // Función para obtener info del usuario actual
   const getCurrentUserInfo = (): UserInfo => {
@@ -145,7 +104,7 @@ export default function Dashboard() {
     return 'Buenas noches';
   };
 
-  // Función para exportar datos
+  // Función para exportar datos - ACTUALIZADA con utils
   const handleExport = () => {
     const csvContent = [
       ['Email', 'Nombre', 'Apellido', 'Es Mentor', 'Roles', 'Idioma'].join(','),
@@ -155,7 +114,7 @@ export default function Dashboard() {
         applicant.lastName,
         applicant.mentor ? 'Sí' : 'No',
         applicant.roles.join('; '),
-        applicant.language
+        getLanguageDisplay(applicant.language) // ✅ Usar función utils
       ].join(','))
     ].join('\n');
 
@@ -189,20 +148,12 @@ export default function Dashboard() {
             <strong className="font-bold">Error: </strong>
             <span className="block sm:inline">{error}</span>
           </div>
-          <div className="flex gap-3 justify-center">
-            <button 
-              onClick={reload}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Reintentar
-            </button>
-            <button 
-              onClick={() => setShowDiagnostic(true)}
-              className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Diagnóstico
-            </button>
-          </div>
+          <button 
+            onClick={reload}
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded"
+          >
+            Reintentar
+          </button>
         </div>
       </div>
     );
@@ -299,49 +250,18 @@ export default function Dashboard() {
         <header className="bg-[var(--color-header-bg)] border-b border-gray-200 px-8 py-6 shadow-[var(--color-header-shadow)]">
           <div className="flex items-center justify-between">
             <div>
-              <div className="flex items-center space-x-3">
-                <h1 className="text-2xl font-bold text-[var(--color-foreground)]">
-                  {getGreeting()}, {currentUser.displayName}
-                </h1>
-                {/* Stats source indicator */}
-                <div className="flex items-center space-x-1">
-                  {statsLoading ? (
-                    <div className="flex items-center text-xs text-[var(--color-warning)]">
-                      <Clock className="w-3 h-3 mr-1" />
-                      Cargando stats...
-                    </div>
-                  ) : statsError ? (
-                    <div className="flex items-center text-xs text-[var(--color-muted)]" title="Usando estadísticas del cliente como fallback">
-                      <Users className="w-3 h-3 mr-1" />
-                      Cliente
-                    </div>
-                  ) : credentials.email && credentials.password ? (
-                    <div className="flex items-center text-xs text-[var(--color-success)]" title="Estadísticas del servidor en tiempo real">
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Servidor
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-xs text-[var(--color-muted)]" title="Usando estadísticas del cliente">
-                      <Users className="w-3 h-3 mr-1" />
-                      Cliente
-                    </div>
-                  )}
-                </div>
-              </div>
+              <h1 className="text-2xl font-bold text-[var(--color-foreground)]">
+                {getGreeting()}, {currentUser.displayName}
+              </h1>
               <p className="mt-1 text-[var(--color-muted)]">Gestiona las solicitudes de acceso a SheHub</p>
             </div>
             <div className="flex items-center space-x-4">
               <button 
-                onClick={reloadAll}
-                disabled={loading || statsLoading}
-                className={`p-2 rounded-lg transition-colors focus-square ${
-                  loading || statsLoading 
-                    ? 'text-gray-400 cursor-not-allowed' 
-                    : 'text-[var(--color-icon-default)] hover:text-[var(--color-icon-hover)] hover:bg-[var(--color-primary-hover)]'
-                }`}
-                title="Actualizar datos y estadísticas"
+                onClick={reload}
+                className="p-2 text-[var(--color-icon-default)] hover:text-[var(--color-icon-hover)] hover:bg-[var(--color-primary-hover)] rounded-lg transition-colors focus-square"
+                title="Actualizar datos"
               >
-                <RefreshCw className={`w-5 h-5 ${(loading || statsLoading) ? 'animate-spin' : ''}`} />
+                <RefreshCw className="w-5 h-5" />
               </button>
               <button 
                 className="px-4 py-2 rounded-lg text-[var(--color-button-primary-primary-text)] bg-[var(--color-button-primary-primary-bg-default)] hover:bg-[var(--color-button-primary-primary-bg-hover)] hover:text-[var(--color-button-primary-primary-text-hover)] transition-colors flex items-center space-x-2 focus-square"
@@ -356,32 +276,6 @@ export default function Dashboard() {
 
         {/* Stats Cards */}
         <div className="px-8 py-6">
-          {/* Error indicator for statistics */}
-          {statsError && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center space-x-2">
-                <div className="w-4 h-4 bg-red-500 rounded-full flex-shrink-0"></div>
-                <p className="text-sm text-red-700">
-                  Error cargando estadísticas del servidor: {statsError}
-                </p>
-                <div className="ml-auto flex gap-2">
-                  <button 
-                    onClick={refetchStats}
-                    className="text-red-600 hover:text-red-800 underline text-sm"
-                  >
-                    Reintentar
-                  </button>
-                  <button 
-                    onClick={() => setShowDiagnostic(true)}
-                    className="text-red-600 hover:text-red-800 underline text-sm"
-                  >
-                    Diagnóstico
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="bg-[var(--color-card-white-bg-default)] p-6 rounded-lg border border-gray-200 fade-in shadow-[var(--color-card-shadow-default)] hover:shadow-[var(--color-card-shadow-hover)] transition-shadow duration-200">
               <div className="flex items-center space-x-3">
@@ -390,12 +284,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-sm text-[var(--color-card-white-description)] font-medium">Total Solicitudes</p>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-2xl font-bold text-[var(--color-card-white-title)]">
-                      {statsLoading ? '...' : stats.total}
-                    </p>
-                    {statsLoading && <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>}
-                  </div>
+                  <p className="text-2xl font-bold text-[var(--color-card-white-title)]">{stats.total}</p>
                 </div>
               </div>
             </div>
@@ -408,12 +297,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm text-[var(--color-card-white-description)] font-medium">Pendientes</p>
                   <p className="text-xs text-[var(--color-muted)]">(de convertirse en usuarios)</p>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-2xl font-bold text-[var(--color-card-white-title)]">
-                      {statsLoading ? '...' : stats.pending}
-                    </p>
-                    {statsLoading && <div className="w-4 h-4 border-2 border-orange-600 border-t-transparent rounded-full animate-spin"></div>}
-                  </div>
+                  <p className="text-2xl font-bold text-[var(--color-card-white-title)]">{stats.pending}</p>
                 </div>
               </div>
             </div>
@@ -426,12 +310,7 @@ export default function Dashboard() {
                 <div>
                   <p className="text-sm text-[var(--color-card-white-description)] font-medium">Registradas</p>
                   <p className="text-xs text-[var(--color-muted)]">(ya convertidas en usuarios)</p>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-2xl font-bold text-[var(--color-card-white-title)]">
-                      {statsLoading ? '...' : stats.converted}
-                    </p>
-                    {statsLoading && <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>}
-                  </div>
+                  <p className="text-2xl font-bold text-[var(--color-card-white-title)]">{stats.converted}</p>
                 </div>
               </div>
             </div>
@@ -442,13 +321,8 @@ export default function Dashboard() {
                   <Star className="w-6 h-6 text-[var(--color-secondary)]" />
                 </div>
                 <div>
-                  <p className="text-sm text-[var(--color-card-white-description)] font-medium">Mentoras</p>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-2xl font-bold text-[var(--color-card-white-title)]">
-                      {statsLoading ? '...' : stats.mentors}
-                    </p>
-                    {statsLoading && <div className="w-4 h-4 border-2 border-pink-600 border-t-transparent rounded-full animate-spin"></div>}
-                  </div>
+                  <p className="text-sm text-gray-600">Mentores</p>
+                  <p className="text-2xl font-bold text-gray-900">{stats.mentors}</p>
                 </div>
               </div>
             </div>
@@ -489,6 +363,7 @@ export default function Dashboard() {
                 {[
                   { key: 'all' as TabType, label: 'Todos', count: stats.total },
                   { key: 'mentors' as TabType, label: 'Mentores', count: stats.mentors },
+                  { key: 'colaboradoras' as TabType, label: 'Colaboradoras', count: stats.colaboradoras },
                   { key: 'pending' as TabType, label: 'Pendientes', count: stats.pending },
                   { key: 'converted' as TabType, label: 'Registradas', count: stats.converted }
                 ].map(tab => (
@@ -542,9 +417,7 @@ export default function Dashboard() {
                       </td>
                       <td className="px-6 py-4">
                         <span className="text-sm text-[var(--color-card-white-title)]">
-                          {applicant.language === 'SPANISH' ? '🇪🇸 ES' :
-                           applicant.language === 'ENGLISH' ? '🇬🇧 EN' :
-                           applicant.language === 'CATALAN' ? '🏴󐁥󐁳󐁣󐁴󐁿 CAT' : applicant.language}
+                          {getLanguageFlag(applicant.language)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -669,7 +542,7 @@ export default function Dashboard() {
                       ? 'bg-[var(--color-avatar-secondary-variant-bg)] text-[var(--color-secondary)]'
                       : 'bg-[var(--color-avatar-primary-variant-bg)] text-[var(--color-primary)]'
                   }`}>
-                    {selectedApplicant.mentor ? '⭐ Mentora' : '👥 Colaboradora'}
+                    {selectedApplicant.mentor ? 'Mentora' : 'Colaboradora'}
                   </span>
                 </div>
               </div>
@@ -692,9 +565,7 @@ export default function Dashboard() {
                 <div>
                   <label className="block text-sm font-medium text-[var(--color-card-white-description)] mb-2">Idioma</label>
                   <p className="text-sm text-[var(--color-card-white-title)] font-medium">
-                    {selectedApplicant.language === 'SPANISH' ? '🇪🇸 Español' :
-                     selectedApplicant.language === 'ENGLISH' ? '🇬🇧 Inglés' :
-                     selectedApplicant.language === 'CATALAN' ? '🏴󐁥󐁳󐁣󐁴󐁿 Catalán' : selectedApplicant.language}
+                    {getLanguageDisplay(selectedApplicant.language)}
                   </p>
                 </div>
                 <div>
@@ -714,7 +585,7 @@ export default function Dashboard() {
                         ? 'bg-green-100 text-[var(--color-success)]'
                         : 'bg-[var(--color-avatar-tertairy-variant-bg)] text-[var(--color-warning)]'
                     }`}>
-                      {selectedApplicant.userId ? '✅ Ya registrada en el sistema' : '⏳ Pendiente de registro'}
+                      {selectedApplicant.userId ? 'Ya registrada en el sistema' : 'Pendiente de registro'}
                     </span>
                   </div>
                 </div>
@@ -722,11 +593,6 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-      )}
-      
-      {/* Server Diagnostic Modal */}
-      {showDiagnostic && (
-        <ServerDiagnostic onClose={() => setShowDiagnostic(false)} />
       )}
     </div>
   );

@@ -1,69 +1,79 @@
 // src/features/hooks/useApplicants.ts
 
-import { ApplicantAPI } from '../applicants/api/applicants.api';
-import type { Applicant } from '../types/applicant.types';
+import { getApplicants } from '@features/applicants/api/applicants.api';
+import type { Applicant, Language } from '@features/types/applicant.types';
 import { useCallback, useEffect, useState } from 'react';
 
-// Datos mock para fallback
+// Datos mock para fallback - CORREGIDOS con enum Language
 const mockData: Applicant[] = [
-  { 
-    id: 1, 
-    email: 'ana.garcia@email.com', 
-    firstName: 'Ana', 
+  {
+    id: 1,
+    email: 'ana.garcia@email.com',
+    firstName: 'Ana',
     lastName: 'García',
     mentor: false,
+    displayRole: 'Colaboradora',
     roles: ['Frontend Developer', 'React Specialist'],
-    language: 'SPANISH',
-    timestamp: '2024-08-25T10:30:00Z', 
+    language: 'ES', // ✅ Usar valor del enum
+    timestamp: '2024-08-25T10:30:00Z',
     deleted: false,
+    deletedAt: null,
     userId: null
   },
-  { 
-    id: 2, 
-    email: 'laura.martinez@email.com', 
-    firstName: 'Laura', 
+  {
+    id: 2,
+    email: 'laura.martinez@email.com',
+    firstName: 'Laura',
     lastName: 'Martínez',
     mentor: true,
+    displayRole: 'Mentora',
     roles: ['UX Designer', 'Design Mentor'],
-    language: 'ENGLISH',
-    timestamp: '2024-08-24T14:20:00Z', 
+    language: 'EN', // ✅ Usar valor del enum
+    timestamp: '2024-08-24T14:20:00Z',
     deleted: false,
+    deletedAt: null,
     userId: 123
   },
-  { 
-    id: 3, 
-    email: 'sofia.lopez@email.com', 
-    firstName: 'Sofía', 
+  {
+    id: 3,
+    email: 'sofia.lopez@email.com',
+    firstName: 'Sofía',
     lastName: 'López',
     mentor: false,
+    displayRole: 'Colaboradora',
     roles: ['Product Manager'],
-    language: 'SPANISH',
-    timestamp: '2024-08-23T09:15:00Z', 
+    language: 'ES', // ✅ Usar valor del enum
+    timestamp: '2024-08-23T09:15:00Z',
     deleted: false,
+    deletedAt: null,
     userId: null
   },
-  { 
-    id: 4, 
-    email: 'maria.rodriguez@email.com', 
-    firstName: 'María', 
+  {
+    id: 4,
+    email: 'maria.rodriguez@email.com',
+    firstName: 'María',
     lastName: 'Rodríguez',
     mentor: true,
+    displayRole: 'Mentora',
     roles: ['Data Scientist', 'AI Mentor'],
-    language: 'CATALAN',
-    timestamp: '2024-08-22T16:45:00Z', 
+    language: 'CAT', // ✅ Usar valor del enum
+    timestamp: '2024-08-22T16:45:00Z',
     deleted: false,
+    deletedAt: null,
     userId: null
   },
-  { 
-    id: 5, 
-    email: 'carmen.sanchez@email.com', 
-    firstName: 'Carmen', 
+  {
+    id: 5,
+    email: 'carmen.sanchez@email.com',
+    firstName: 'Carmen',
     lastName: 'Sánchez',
     mentor: false,
+    displayRole: 'Colaboradora',
     roles: ['Marketing Digital', 'Social Media'],
-    language: 'SPANISH',
-    timestamp: '2024-08-21T11:30:00Z', 
+    language: 'ES', // ✅ Usar valor del enum
+    timestamp: '2024-08-21T11:30:00Z',
     deleted: false,
+    deletedAt: null,
     userId: 456
   },
 ];
@@ -105,29 +115,49 @@ export const useApplicants = () => {
     const pass = sessionStorage.getItem('demo_pass') || '';
     
     if (!email || !pass) {
-      setError('No hay credenciales');
+      console.log('No hay credenciales disponibles, usando datos mock');
+      setRows(mockData);
+      setError('');
       setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
-      console.log('Intentando cargar applicants desde el servidor...');
-      const data = await ApplicantAPI.getAllApplicants(email, pass);
+      console.log('Cargando aplicantes desde el servidor...');
+      const data = await getApplicants(email, pass, 0, 100);
       console.log('Datos recibidos de la API:', data);
-      setRows(data);
+      
+      const normalizedData = normalizeApiData(data);
+      console.log('Datos normalizados:', normalizedData);
+      
+      if (normalizedData.length === 0) {
+        console.log('No hay datos del servidor, usando mock como fallback');
+        setRows(mockData);
+      } else {
+        setRows(normalizedData);
+      }
+      
       setError('');
     } catch (err: unknown) {
-      console.error('Error detallado al cargar applicants:', {
-        error: err,
-        message: err instanceof Error ? err.message : 'Error desconocido',
-        stack: err instanceof Error ? err.stack : undefined
-      });
+      console.error('Error al cargar applicants:', err);
       
-      // Si falla la API, usar datos simulados como fallback
-      console.log('Usando datos simulados como fallback debido al error del servidor');
+      // Determinar mensaje de error específico
+      let errorMessage = 'Error desconocido';
+      if (err instanceof Error) {
+        if (err.message.includes('Failed to fetch')) {
+          errorMessage = 'No se puede conectar al servidor. Usando datos de prueba.';
+        } else if (err.message.includes('401')) {
+          errorMessage = 'Credenciales incorrectas. Usando datos de prueba.';
+        } else {
+          errorMessage = err.message;
+        }
+      }
+      
+      // Usar datos simulados como fallback
+      console.log('Usando datos simulados como fallback');
       setRows(mockData);
-      setError('Error del servidor. Usando datos de respaldo.');
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
