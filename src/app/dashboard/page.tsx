@@ -1,9 +1,14 @@
 'use client';
 
+import { ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, PointElement, Tooltip } from 'chart.js';
 import {
+  BarChart3,
   Bell,
+  Calendar,
   CheckCircle,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   Download,
   Edit,
@@ -11,22 +16,16 @@ import {
   LogOut,
   Plus,
   RefreshCw,
-  Search,
   Settings,
   Star,
   Trash2,
-  Users,
-  X,
   TrendingUp,
-  Calendar,
-  BarChart3,
-  ChevronLeft,
-  ChevronRight
+  Users,
+  X
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement } from 'chart.js';
-import { Doughnut, Bar, Line } from 'react-chartjs-2';
+import { Bar, Doughnut, Line } from 'react-chartjs-2';
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, LineElement, PointElement);
@@ -42,6 +41,9 @@ import { useApplicantStats } from '../../features/hooks/useApplicantStats';
 // Import utils
 import { formatDate, getUserInitials } from '../../features/applicants/utils/applicant.utils';
 import { getLanguageDisplay, getLanguageFlag } from '../../features/applicants/utils/language.utils';
+
+// Import components
+import { AdvancedSearchInput } from '../../components/AdvancedSearchInput';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -80,7 +82,11 @@ export default function Dashboard() {
     setActiveTab, 
     searchTerm, 
     setSearchTerm, 
-    filteredApplicants 
+    selectedLanguage,
+    setSelectedLanguage,
+    availableLanguages,
+    filteredApplicants,
+    getSearchSuggestions
   } = useApplicantFilter(applicants); // Usar datos paginados para filtros
 
   // Función para obtener info del usuario actual
@@ -521,16 +527,35 @@ export default function Dashboard() {
             {/* Toolbar */}
             <div className="p-8 border-b border-[var(--color-disabled)] bg-gradient-to-r from-[var(--color-background-footer)] to-white rounded-t-2xl">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-                {/* Search */}
-                <div className="relative flex-1 max-w-md">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--color-muted)] w-5 h-5" />
-                  <input
-                    type="text"
-                    placeholder="Buscar por email, nombre..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-12 pr-4 py-4 border border-[var(--color-disabled)] rounded-xl focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300 bg-white shadow-sm hover:shadow-md font-medium"
-                  />
+                {/* Search and Language Filter */}
+                <div className="flex flex-1 gap-4 max-w-2xl">
+                  {/* Advanced Search */}
+                  <div className="flex-1">
+                    <AdvancedSearchInput
+                      searchTerm={searchTerm}
+                      setSearchTerm={setSearchTerm}
+                      getSearchSuggestions={getSearchSuggestions}
+                      placeholder="Buscar por email, nombre, dominio o roles..."
+                    />
+                  </div>
+
+                  {/* Language Filter */}
+                  <div className="relative min-w-[200px]">
+                    <select
+                      value={selectedLanguage}
+                      onChange={(e) => setSelectedLanguage(e.target.value as typeof selectedLanguage)}
+                      className="w-full pl-4 pr-10 py-4 border border-[var(--color-disabled)] rounded-xl focus:ring-2 focus:ring-[var(--color-primary)] focus:border-[var(--color-primary)] transition-all duration-300 bg-white shadow-sm hover:shadow-md font-medium text-[var(--color-foreground)] appearance-none cursor-pointer"
+                      title="Filtrar por idioma"
+                    >
+                      <option value="all">🌍 Todos los idiomas</option>
+                      {availableLanguages.map(language => (
+                        <option key={language} value={language}>
+                          {getLanguageFlag(language)} {getLanguageDisplay(language)}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 text-[var(--color-muted)] w-5 h-5 pointer-events-none" />
+                  </div>
                 </div>
 
                 {/* Actions */}
@@ -545,6 +570,48 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
+
+              {/* Filter Status */}
+              {(searchTerm || selectedLanguage !== 'all') && (
+                <div className="flex items-center flex-wrap gap-2 px-4 py-2 bg-[var(--color-primary-hover)] rounded-xl border border-[var(--color-primary)] shadow-sm">
+                  <span className="text-sm font-medium text-[var(--color-primary)]">
+                    Filtros activos:
+                  </span>
+                  {searchTerm && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--color-primary)] text-white rounded-lg text-xs font-bold">
+                      Búsqueda: &quot;{searchTerm}&quot;
+                      <button 
+                        onClick={() => setSearchTerm('')}
+                        className="hover:bg-white/20 rounded p-0.5 transition-colors"
+                        aria-label="Limpiar búsqueda"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  {selectedLanguage !== 'all' && (
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--color-secondary)] text-white rounded-lg text-xs font-bold">
+                      {getLanguageFlag(selectedLanguage)} {getLanguageDisplay(selectedLanguage)}
+                      <button 
+                        onClick={() => setSelectedLanguage('all')}
+                        className="hover:bg-white/20 rounded p-0.5 transition-colors"
+                        aria-label="Limpiar filtro de idioma"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSelectedLanguage('all');
+                    }}
+                    className="text-xs font-bold text-[var(--color-primary)] hover:text-[var(--color-primary-hover)] transition-colors underline"
+                  >
+                    Limpiar todos
+                  </button>
+                </div>
+              )}
 
               {/* Enhanced Tabs */}
               <div className="flex flex-wrap gap-2 mt-8 p-2 bg-white/80 backdrop-blur-sm rounded-xl border border-white/50">
@@ -593,7 +660,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody className="bg-[var(--color-card-white-bg-default)] divide-y divide-[var(--color-disabled)]">
-                  {filteredApplicants.map((applicant, index) => (
+                  {filteredApplicants.map((applicant) => (
                     <tr key={applicant.id} className="hover:bg-[var(--color-card-white-bg-hover)] transition-colors duration-200">
                       <td className="px-8 py-6">
                         <div className="flex items-center space-x-4">
@@ -690,11 +757,22 @@ export default function Dashboard() {
                     No se encontraron aplicantes
                   </h3>
                   <p className="text-[var(--color-muted)] font-medium">
-                    {searchTerm 
-                      ? `No hay resultados para "${searchTerm}"`
+                    {searchTerm || selectedLanguage !== 'all'
+                      ? 'No hay resultados que coincidan con los filtros aplicados'
                       : 'No hay aplicantes disponibles'
                     }
                   </p>
+                  {(searchTerm || selectedLanguage !== 'all') && (
+                    <button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setSelectedLanguage('all');
+                      }}
+                      className="mt-4 px-6 py-3 bg-[var(--color-primary)] text-white rounded-xl hover:bg-[var(--color-primary-hover)] transition-all duration-200 font-medium shadow-sm hover:shadow-md"
+                    >
+                      Limpiar filtros
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -707,6 +785,11 @@ export default function Dashboard() {
                   <div className="flex items-center space-x-4">
                     <div className="text-sm text-[var(--color-muted)] font-medium">
                       Mostrando {Math.min(startIndex + 1, totalElements)} - {Math.min(endIndex, totalElements)} de {totalElements} aplicantes
+                      {(searchTerm || selectedLanguage !== 'all') && (
+                        <span className="ml-2 px-2 py-1 bg-[var(--color-primary)] text-white rounded text-xs font-bold">
+                          {filteredApplicants.length} filtrado{filteredApplicants.length !== 1 ? 's' : ''}
+                        </span>
+                      )}
                     </div>
                     
                     {/* Selector de tamaño de página */}
