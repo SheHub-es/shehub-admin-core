@@ -1,5 +1,5 @@
 // components/applicants/ApplicantForm.tsx
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import {
@@ -10,7 +10,7 @@ import {
 } from '../features/types/applicant';
 
 interface ApplicantFormProps {
-  initialData?: Partial<CreateApplicantDto>; // suficiente para prellenar
+  initialData?: Partial<CreateApplicantDto>;
   onSubmit: (data: CreateApplicantDto | UpdateApplicantDto) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
@@ -25,13 +25,14 @@ export function ApplicantForm({
   mode,
 }: ApplicantFormProps) {
   const [formData, setFormData] = useState({
-    email: initialData.email || '',
-    firstName: initialData.firstName || '',
-    lastName: initialData.lastName || '',
+    // Nota: email solo se usa en create; en update lo ignoraremos al enviar
+    email: initialData.email ?? '',
+    firstName: initialData.firstName ?? '',
+    lastName: initialData.lastName ?? '',
     mentor: initialData.mentor ?? false,
-    // language como string porque el backend mapea string -> enum
-    language: (initialData.language as string) || Language.ES,
-    // roles en input de texto, separados por coma
+    // initialData.language puede venir como string; lo normalizamos al enum para el select
+    language: ((initialData.language as Language) ?? Language.ES) as Language,
+    // En el formulario lo editamos como string separado por comas
     roles: Array.isArray(initialData.roles) ? initialData.roles.join(', ') : '',
   });
 
@@ -44,26 +45,28 @@ export function ApplicantForm({
       .filter((r) => r.length > 0);
 
     if (mode === 'create') {
-      // CreateApplicantDto
+      // CreateApplicantDto tiene language?: string; enviamos el nombre del enum como string
       const payload: CreateApplicantDto = {
-        email: formData.email,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
+        email: formData.email.trim(),
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
         mentor: formData.mentor,
-        language: formData.language, // string
+        language: formData.language, // el backend acepta el string del enum (p.ej. "ES")
         roles: rolesArray,
       };
       await onSubmit(payload);
     } else {
-      // UpdateApplicantDto (sin email)
-      const payload: UpdateApplicantDto = {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        mentor: formData.mentor,
-        language: formData.language as Language,
-        roles: rolesArray,
-      };
-      await onSubmit(payload);
+      // En update NO enviamos email para no pisarlo con "" y evitar 500
+     const payload: UpdateApplicantDto & { email: string } = {
+  firstName: formData.firstName.trim(),
+  lastName: formData.lastName.trim(),
+  mentor: formData.mentor,
+  language: formData.language,
+  roles: rolesArray,
+  email: (initialData.email ?? '').trim(), // 👈 añade el email existente
+};
+
+await onSubmit(payload as UpdateApplicantDto);
     }
   };
 
@@ -127,7 +130,7 @@ export function ApplicantForm({
         <select
           id="language"
           value={formData.language}
-          onChange={(e) => setFormData({ ...formData, language: e.target.value })}
+          onChange={(e) => setFormData({ ...formData, language: e.target.value as Language })}
           required
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
@@ -157,7 +160,7 @@ export function ApplicantForm({
           Roles Profesionales
         </label>
         <p className="text-xs text-gray-500 mb-3">
-          Escribe los roles profesionales separados por coma (ej: Frontend Developer, UX Designer, Product Manager)
+          Escribe los roles separados por coma (p. ej.: Frontend Developer, UX Designer, Product Manager)
         </p>
         <input
           type="text"
@@ -165,7 +168,7 @@ export function ApplicantForm({
           value={formData.roles}
           onChange={(e) => setFormData({ ...formData, roles: e.target.value })}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="Ejemplo: Frontend Developer, UX Designer, Product Manager"
+          placeholder="Ej.: Frontend Developer, UX Designer, Product Manager"
         />
       </div>
 
@@ -188,3 +191,4 @@ export function ApplicantForm({
     </form>
   );
 }
+
