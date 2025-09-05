@@ -1,85 +1,86 @@
-// src/lib/api.ts
-const BASE = process.env.NEXT_PUBLIC_API_URL || ''; // '' si usas rewrites de Next
+// src/features/applicants/api/applicants.api.ts
 
-export function basicAuthHeader(email: string, password: string) {
-  // Asume entorno cliente (btoa disponible). No usar en Server Components.
-  return { Authorization: `Basic ${btoa(`${email}:${password}`)}` };
+// ==== Helpers ====
+async function parse<T = unknown>(res: Response): Promise<T> {
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) return res.json();
+  return res.text() as unknown as T;
 }
 
-async function parse<T = unknown>(res: Response): Promise<T | string> {
-  const ct = res.headers.get('content-type') || '';
-  if (ct.includes('application/json')) return res.json();
-  return res.text();
+// ==== Types ====
+export interface CreateApplicantRequest {
+  email: string;
+  firstName: string;
+  lastName: string;
+  mentor: boolean;
+  roles: string[];
+  language?: string;
 }
 
-export async function adminTest(email: string, password: string) {
-  const res = await fetch(`${BASE}/admin/test`, {
-    headers: basicAuthHeader(email, password),
-    cache: 'no-store',
+export interface UpdateApplicantRequest {
+  firstName?: string;
+  lastName?: string;
+  mentor?: boolean;
+  roles?: string[];
+  language?: string;
+}
+
+// ==== CRUD Applicants ====
+
+// CREATE
+export async function createApplicant(data: CreateApplicantRequest) {
+  const res = await fetch(`/api/applicants`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error(`Auth failed: ${res.status} ${res.statusText}`);
+  if (!res.ok) throw new Error(await res.text());
   return parse(res);
 }
 
-export async function getApplicants(
-  email: string,
-  password: string,
-  page = 0,
-  size = 10
+// READ (get by id)
+export async function getApplicantById(id: number) {
+  const res = await fetch(`/api/applicants/${id}`);
+  if (!res.ok) throw new Error(await res.text());
+  return parse(res);
+}
+
+// UPDATE (by id)
+export async function updateApplicantById(
+  id: number,
+  data: UpdateApplicantRequest
 ) {
-  const res = await fetch(`${BASE}/admin/applicants?page=${page}&size=${size}`, {
-    headers: basicAuthHeader(email, password),
-    cache: 'no-store',
+  const res = await fetch(`/api/applicants/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.json(); // aquí sí sabemos que es JSON (Page<>)
+  return parse(res);
 }
 
-export async function getTotalApplicants(email: string, password: string) {
-  const res = await fetch(`${BASE}/applicants/count`, {
-    headers: basicAuthHeader(email, password),
-    cache: 'no-store',
+// DELETE (by id)
+export async function deleteApplicantById(id: number) {
+  const res = await fetch(`/api/applicants/${id}`, {
+    method: "DELETE",
   });
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
 }
 
-export async function getMentorsCount(email: string, password: string) {
-  const res = await fetch(`${BASE}/applicants/count/mentor/true`, {
-    headers: basicAuthHeader(email, password),
-    cache: 'no-store',
-  });
+// RESTORE (by email)
+export async function restoreApplicant(email: string) {
+  const res = await fetch(
+    `/api/applicants/restore/email/${encodeURIComponent(email)}`,
+    {
+      method: "PUT",
+    }
+  );
   if (!res.ok) throw new Error(await res.text());
-  return res.json();
+  return parse(res);
 }
 
-export async function getApplicantStats(email: string, password: string) {
-  console.log('🔄 Iniciando petición de estadísticas...');
-  console.log('📍 URL base:', BASE);
-  console.log('🔗 URL completa:', `${BASE}/applicants/stats`);
-  
-  // Solicitar estadísticas directamente
-  console.log('📊 Solicitando estadísticas del servidor...');
-  const res = await fetch(`${BASE}/applicants/stats`, {
-    headers: basicAuthHeader(email, password),
-    cache: 'no-store',
-  });
-  
-  console.log('📈 Respuesta del servidor stats:', {
-    ok: res.ok,
-    status: res.status,
-    statusText: res.statusText,
-    url: res.url
-  });
 
-  if (!res.ok) {
-    const errorText = await res.text();
-    console.log('❌ Error del servidor stats:', errorText);
-    throw new Error(`Server stats error: ${res.status} ${res.statusText} - ${errorText}`);
-  }
-
-  // Parsear respuesta
-  const data = await res.json();
-  console.log('✅ Estadísticas recibidas del servidor:', data);
-  return data;
-}

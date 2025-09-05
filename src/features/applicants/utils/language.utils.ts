@@ -1,3 +1,10 @@
+export const LANGUAGES = [
+  { code: "ES", label: "Español" },
+  { code: "EN", label: "English" },
+  { code: "CAT", label: "Catalán" },
+  { code: "EN_GB", label: "English (UK)" },
+  { code: "EN_US", label: "English (US)" }
+];
 // utils/language.utils.ts
 import type { Language } from '../../../features/types/applicant.types';
 
@@ -23,10 +30,11 @@ export const getLanguageFlag = (language: Language): string => {
     case 'ES':
       return '🇪🇸 ES';
     case 'EN':
-    case 'EN_GB':
       return '🇬🇧 EN';
+    case 'EN_GB':
+      return '🇬🇧 EN (UK)';
     case 'EN_US':
-      return '🇺🇸 EN';
+      return '🇺🇸 EN (US)';
     case 'CAT':
       return '🟨🟥 CAT';
     default:

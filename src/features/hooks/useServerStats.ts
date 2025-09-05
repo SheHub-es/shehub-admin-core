@@ -1,6 +1,4 @@
-// src/features/hooks/useServerStats.ts
-
-import { getApplicantStats } from '@features/applicants/api/applicants.api';
+import { getApplicantStats } from "@/features/applicants/api/adminApplicants.api";
 import type { ApplicantStats } from '@features/types/applicant.types';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -24,16 +22,27 @@ export function useServerStats(email: string, password: string) {
       console.log('📧 Usuario:', email);
       console.log('🌐 API URL:', process.env.NEXT_PUBLIC_API_URL);
       
-      const serverStats = await getApplicantStats(email, password);
+      // Definir tipo para la respuesta cruda del servidor
+      type RawServerStats = {
+        total?: number;
+        totalApplicants?: number;
+        pending?: number;
+        pendingApplicants?: number;
+        converted?: number;
+        mentors?: number;
+        colaboradoras?: number;
+        [key: string]: unknown;
+      };
+      const serverStats: RawServerStats = await getApplicantStats(email, password);
       console.log('✅ Estadísticas del servidor recibidas:', serverStats);
       
       // Mapear respuesta del servidor al formato esperado por el frontend
       const mappedStats: ApplicantStats = {
-        total: serverStats.total || 0,
-        pending: 0, 
-        converted: 0,  
-        mentors: serverStats.mentors || 0,
-        colaboradoras: serverStats.colaboradoras || 0
+        total: serverStats.total ?? serverStats.totalApplicants ?? 0,
+        pending: serverStats.pending ?? serverStats.pendingApplicants ?? 0, 
+        converted: serverStats.converted ?? 0,  
+        mentors: serverStats.mentors ?? 0,
+        colaboradoras: serverStats.colaboradoras ?? 0
       };
       
       setStats(mappedStats);
@@ -82,3 +91,4 @@ export function useServerStats(email: string, password: string) {
     refetch
   };
 }
+

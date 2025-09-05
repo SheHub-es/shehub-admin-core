@@ -1,5 +1,6 @@
 'use client';
 
+
 import { ArcElement, BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, PointElement, Tooltip } from 'chart.js';
 import {
   BarChart3,
@@ -21,7 +22,7 @@ import {
   Trash2,
   TrendingUp,
   Users,
-  X
+  X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -34,6 +35,7 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 import { Applicant, TabType, UserInfo } from '../../features/types/applicant.types';
 
 // Import hooks
+import { useApplicantCRUD } from '../../features/hooks/useApplicantCrud';
 import { useApplicantFilter } from '../../features/hooks/useApplicantFilter';
 import { useApplicants } from '../../features/hooks/useApplicants';
 import { useApplicantStats } from '../../features/hooks/useApplicantStats';
@@ -44,6 +46,7 @@ import { getLanguageDisplay, getLanguageFlag } from '../../features/applicants/u
 
 // Import components
 import { AdvancedSearchInput } from '../../components/AdvancedSearchInput';
+import { ApplicantCrudModal } from '../../components/ApplicantCrudModal';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -65,6 +68,15 @@ export default function Dashboard() {
   // Using custom hooks - simulando paginación por ahora
   const { rows: allApplicants, loading, error, reload } = useApplicants();
   
+ // Hook CRUD
+  const {
+    state: crudState,
+    openCreateModal,
+    closeModal,
+    createApplicant,
+    clearError
+  } = useApplicantCRUD(reload);
+
   // Simulación de datos paginados hasta que conectemos con el backend real
   const startIndex = currentPage * pageSize;
   const endIndex = startIndex + pageSize;
@@ -436,11 +448,12 @@ export default function Dashboard() {
                 <RefreshCw className="w-5 h-5" />
               </button>
               <button 
+                onClick={openCreateModal}
                 className="px-6 py-3 rounded-xl text-[var(--color-button-primary-primary-text)] bg-[image:var(--color-button-bg-gradient)] hover:opacity-90 transition-all duration-300 flex items-center space-x-2 font-bold shadow-lg hover:shadow-xl hover:scale-105"
-                title="Invitar un nuevo usuario al sistema"
+                title="Crear nueva aplicante en la lista de espera"
               >
                 <Plus className="w-4 h-4" />
-                <span>Invitar Usuario</span>
+                <span>Crear Aplicante</span>
               </button>
             </div>
           </div>
@@ -451,8 +464,8 @@ export default function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
             {[
               { title: 'Total Solicitudes', value: stats.total, icon: Users, color: 'var(--color-primary)', bg: 'var(--color-avatar-primary-variant-bg)' },
-              { title: 'Pendientes', value: stats.pending, icon: Clock, color: 'var(--color-warning)', bg: 'var(--color-avatar-tertairy-variant-bg)' },
-              { title: 'Registradas', value: stats.converted, icon: CheckCircle, color: 'var(--color-success)', bg: 'var(--color-green-100)' },
+              { title: '"Pendientes"', value: stats.pending, icon: Clock, color: 'var(--color-warning)', bg: 'var(--color-avatar-tertairy-variant-bg)' },
+              { title: '"Registradas"', value: stats.converted, icon: CheckCircle, color: 'var(--color-success)', bg: 'var(--color-green-100)' },
               { title: 'Mentores', value: stats.mentors, icon: Star, color: 'var(--color-secondary)', bg: 'var(--color-avatar-secondary-variant-bg)' },
               { title: 'Colaboradoras', value: stats.colaboradoras, icon: Users, color: 'var(--color-tertairy)', bg: 'var(--color-avatar-tertairy-variant-bg)' }
             ].map((stat, index) => (
@@ -619,8 +632,8 @@ export default function Dashboard() {
                   { key: 'all' as TabType, label: 'Todos', count: stats.total },
                   { key: 'mentors' as TabType, label: 'Mentores', count: stats.mentors },
                   { key: 'colaboradoras' as TabType, label: 'Colaboradoras', count: stats.colaboradoras },
-                  { key: 'pending' as TabType, label: 'Pendientes', count: stats.pending },
-                  { key: 'converted' as TabType, label: 'Registradas', count: stats.converted }
+                  { key: 'pending' as TabType, label: '"Pendientes"', count: stats.pending },
+                  { key: 'converted' as TabType, label: '"Registradas"', count: stats.converted }
                 ].map(tab => (
                   <button
                     key={tab.key}
@@ -1035,7 +1048,18 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* CRUD Modal for Creating/Editing Applicants */}
+      <ApplicantCrudModal
+        isOpen={crudState.isOpen}
+        mode={crudState.mode}
+        applicant={crudState.selectedApplicant}
+        onClose={closeModal}
+        onSuccess={() => {
+          closeModal();
+          reload();
+        }}
+      />
     </div>
   );
 }
-

@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useState } from "react";
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface LoginFormProps {
   onRestart?: () => void;
@@ -13,15 +13,17 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
   const router = useRouter(); // ✅
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [errors, setErrors] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({ email: "", password: "" });
 
   const validateForm = () => {
-    const newErrors = { email: '', password: '' };
-    if (!formData.email) newErrors.email = 'El email es requerido';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email no válido';
-    if (!formData.password) newErrors.password = 'La contraseña es requerida';
-    else if (formData.password.length < 6) newErrors.password = 'La contraseña debe tener al menos 6 caracteres';
+    const newErrors = { email: "", password: "" };
+    if (!formData.email) newErrors.email = "El email es requerido";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = "Email no válido";
+    if (!formData.password) newErrors.password = "La contraseña es requerida";
+    else if (formData.password.length < 6)
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
     setErrors(newErrors);
     return !newErrors.email && !newErrors.password;
   };
@@ -31,19 +33,26 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
     if (!validateForm()) return;
     setIsLoading(true);
     try {
-      const res = await fetch('/admin/test', {
-        headers: { Authorization: 'Basic ' + btoa(`${formData.email}:${formData.password}`) },
-        cache: 'no-store',
+      const res = await fetch("/admin/test", {
+        headers: {
+          Authorization:
+            "Basic " + btoa(`${formData.email}:${formData.password}`),
+        },
+        cache: "no-store",
       });
-      if (!res.ok) throw new Error('Auth failed');
+
+      if (!res.ok) throw new Error("Auth failed");
 
       // Demo only
-      sessionStorage.setItem('demo_email', formData.email);
-      sessionStorage.setItem('demo_pass',  formData.password);
+      sessionStorage.setItem("demo_email", formData.email);
+      sessionStorage.setItem("demo_pass", formData.password);
 
-      router.push('/dashboard'); // ✅ navega al panel
+      router.push("/applicants"); // ✅ navega al panel
     } catch {
-      setErrors(prev => ({ ...prev, password: 'Credenciales inválidas o sin acceso' }));
+      setErrors((prev) => ({
+        ...prev,
+        password: "Credenciales inválidas o sin acceso",
+      }));
     } finally {
       setIsLoading(false);
     }
@@ -51,11 +60,11 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
     // Limpiar error cuando el usuario empiece a escribir
     if (errors[name as keyof typeof errors]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -80,34 +89,47 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
               className="filter brightness-0 invert"
             />
           </div>
-          
+
           <div className="space-y-6">
             <h1 className="text-4xl font-bold text-white leading-tight">
               Bienvenida a tu
               <br />
               <span className="text-orange-200">espacio de liderazgo</span>
             </h1>
-            
+
             <p className="text-purple-100 text-lg leading-relaxed">
-              Desde aquí coordinas una comunidad que transforma carreras, impulsa negocios y conecta mujeres con oportunidades reales. Tu impacto empieza aquí.
+              Desde aquí coordinas una comunidad que transforma carreras,
+              impulsa negocios y conecta mujeres con oportunidades reales. Tu
+              impacto empieza aquí.
             </p>
           </div>
         </div>
 
         <div className="relative z-10 flex items-center gap-4 text-white/80">
           <div className="flex -space-x-2">
-            <div className="w-8 h-8 rounded-full" style={{ backgroundColor: 'var(--color-purple-400)' }} />
-            <div className="w-8 h-8 rounded-full" style={{ backgroundColor: 'var(--color-pink-400)' }} />
-            <div className="w-8 h-8 rounded-full" style={{ backgroundColor: 'var(--color-orange-400)' }} />
+            <div
+              className="w-8 h-8 rounded-full"
+              style={{ backgroundColor: "var(--color-purple-400)" }}
+            />
+            <div
+              className="w-8 h-8 rounded-full"
+              style={{ backgroundColor: "var(--color-pink-400)" }}
+            />
+            <div
+              className="w-8 h-8 rounded-full"
+              style={{ backgroundColor: "var(--color-orange-400)" }}
+            />
           </div>
           <span className="text-sm">+2,500 mujeres ya forman parte</span>
         </div>
       </div>
 
       {/* Panel derecho - Formulario */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8" style={{ backgroundColor: 'var(--color-background-light)' }}>
+      <div
+        className="w-full lg:w-1/2 flex items-center justify-center p-8"
+        style={{ backgroundColor: "var(--color-background-light)" }}
+      >
         <div className="w-full max-w-md">
-          
           {/* Logo móvil */}
           <div className="lg:hidden mb-8 text-center">
             <Image
@@ -121,10 +143,13 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
 
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>
+            <h2
+              className="text-2xl font-bold mb-2"
+              style={{ color: "var(--color-foreground)" }}
+            >
               Iniciar Sesión
             </h2>
-            <p style={{ color: 'var(--color-muted)' }}>
+            <p style={{ color: "var(--color-muted)" }}>
               Accede a tu panel de administración
             </p>
           </div>
@@ -133,7 +158,10 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Campo Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Email
               </label>
               <div className="relative">
@@ -148,7 +176,9 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
                   value={formData.email}
                   onChange={handleChange}
                   className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                    errors.email ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'
+                    errors.email
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300 bg-white"
                   }`}
                   placeholder="tu@email.com"
                 />
@@ -160,7 +190,10 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
 
             {/* Campo Password */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Contraseña
               </label>
               <div className="relative">
@@ -170,12 +203,14 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
                 <input
                   id="password"
                   name="password"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   value={formData.password}
                   onChange={handleChange}
                   className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
-                    errors.password ? 'border-red-300 bg-red-50' : 'border-gray-300 bg-white'
+                    errors.password
+                      ? "border-red-300 bg-red-50"
+                      : "border-gray-300 bg-white"
                   }`}
                   placeholder="••••••••"
                 />
@@ -205,7 +240,10 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
                   type="checkbox"
                   className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
                 />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-700"
+                >
                   Recordarme
                 </label>
               </div>
@@ -223,8 +261,8 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
               disabled={isLoading}
               className={`w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg font-medium transition-all ${
                 isLoading
-                  ? 'bg-purple-400 cursor-not-allowed'
-                  : 'bg-purple-600 hover:bg-purple-700 hover:shadow-lg transform hover:scale-[1.02]'
+                  ? "bg-purple-400 cursor-not-allowed"
+                  : "bg-purple-600 hover:bg-purple-700 hover:shadow-lg transform hover:scale-[1.02]"
               } text-white`}
             >
               {isLoading ? (
@@ -244,7 +282,7 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
           {/* Footer */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <p className="text-center text-sm text-gray-600">
-              ¿No tienes cuenta?{' '}
+              ¿No tienes cuenta?{" "}
               <button className="font-medium text-purple-600 hover:text-purple-500">
                 Solicitar acceso
               </button>

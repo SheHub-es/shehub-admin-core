@@ -9,17 +9,17 @@ export default function Home() {
   const [skipIntro, setSkipIntro] = useState(false);
 
   const handleAnimationComplete = () => {
-    console.log('🎬 Animación completada!'); // ← Añadir este log
+    console.log('🎬 Animación completada!'); 
     setShowAnimation(false);
   };
 
   const restartAnimation = () => {
-    console.log('🔄 Reiniciando animación'); // ← Añadir este log
+    console.log('🔄 Reiniciando animación'); 
     setShowAnimation(true);
     setSkipIntro(false);
   };
 
-  console.log('🔍 Estado actual:', { showAnimation, skipIntro }); // ← Añadir este log
+  console.log('🔍 Estado actual:', { showAnimation, skipIntro }); 
 
   return (
     <>
