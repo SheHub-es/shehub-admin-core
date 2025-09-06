@@ -66,9 +66,12 @@ export interface ApplicantListItemDto {
   firstName: string;
   lastName: string;
   mentor: boolean;
- language: Language | string;
+  language: Language | string;
   roles: string[];
   displayRole?: string;
+  deleted?: boolean;
+  deletedAt?: string | null;
+  timestamp?: string; 
 }
 
 export interface ApplicantDetailDto {

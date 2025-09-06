@@ -1,21 +1,29 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { Plus, RefreshCw, Search, Download } from 'lucide-react';
-import { ApplicantList } from '../../components/ApplicantList';
+import { Download, Plus, RefreshCw, Search } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ApplicantForm } from '../../components/ApplicantForm';
+import { ApplicantList } from '../../components/ApplicantList';
+import { useApplicants } from '../../features/hooks/useApplicants';
+import { applicantApi } from '../../features/lib/applicants';
 import {
   ApplicantListItemDto,
   CreateApplicantDto,
-  UpdateApplicantDto,
   Language,
+  UpdateApplicantDto,
   getLanguageDisplayName,
 } from '../../features/types/applicant';
-import { useApplicants } from '../../features/hooks/useApplicants';
+
+// Helper para parsear timestamp del backend ("yyyy-MM-dd HH:mm:ss" -> Date)
+const parseApiTimestamp = (ts?: string) => {
+  if (!ts) return null;
+  const isoish = ts.replace(' ', 'T');
+  const d = new Date(isoish);
+  return isNaN(d.getTime()) ? null : d;
+};
 
 type ModalType = 'create' | 'edit' | 'delete' | 'view' | null;
 
-// --- Modal básico con z-index corregidos y cierre con Esc ---
 function Modal({
   isOpen,
   onClose,
@@ -50,13 +58,11 @@ function Modal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto" aria-modal="true" role="dialog">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        {/* Overlay: baja un poco el z-index */}
         <div
           className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 z-40"
           onClick={onClose}
           aria-hidden="true"
         />
-        {/* Panel: súbelo por encima del overlay */}
         <div
           className={`inline-block w-full ${sizeClasses[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg relative z-50`}
         >
@@ -120,12 +126,12 @@ function ConfirmModal({
   );
 }
 
-export default function ApplicantsPage() {
+export default function Page() {
   const {
     applicants,
     loading: applicantsLoading,
     error: applicantsError,
-    refresh,
+    refresh: refreshActive,
     create,
     updateById,
     deleteById,
@@ -137,29 +143,88 @@ export default function ApplicantsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [languageFilter, setLanguageFilter] = useState<Language | 'all'>('all');
   const [mentorFilter, setMentorFilter] = useState<'all' | 'mentor' | 'colaboradora'>('all');
+  // Estado de vista: activos, eliminados o todos
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deleted'>('active');
 
-  const filteredApplicants = applicants.filter((applicant) => {
+  // Estado para eliminados traídos desde BE
+  const [deletedApplicants, setDeletedApplicants] = useState<ApplicantListItemDto[]>([]);
+  const [deletedLoading, setDeletedLoading] = useState(false);
+  const [deletedError, setDeletedError] = useState<string | null>(null);
+
+  // Carga según statusFilter
+  useEffect(() => {
+    const load = async () => {
+      try {
+        if (statusFilter === 'deleted') {
+          setDeletedLoading(true);
+          setDeletedError(null);
+          const data = await applicantApi.getDeleted();
+          setDeletedApplicants(data);
+        } else if (statusFilter === 'all') {
+          // Cargar ambos conjuntos
+          setDeletedLoading(true);
+          setDeletedError(null);
+          const [_, deleted] = await Promise.all([
+            refreshActive(),
+            applicantApi.getDeleted(),
+          ]);
+          setDeletedApplicants(deleted);
+        } else {
+          // Solo activos
+          await refreshActive();
+        }
+      } catch (e) {
+        setDeletedError(e instanceof Error ? e.message : 'Error cargando eliminados');
+      } finally {
+        if (statusFilter !== 'active') setDeletedLoading(false);
+      }
+    };
+
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, refreshActive]);
+
+  // Fuente según status
+  const sourceApplicants = useMemo(() => {
+    if (statusFilter === 'deleted') return deletedApplicants;
+    if (statusFilter === 'all') return [...applicants, ...deletedApplicants];
+    return applicants; // active
+  }, [statusFilter, applicants, deletedApplicants]);
+
+  const filteredApplicants = useMemo(() => {
     const q = searchTerm.toLowerCase();
-    const matchesSearch =
-      q === '' ||
-      applicant.firstName.toLowerCase().includes(q) ||
-      applicant.lastName.toLowerCase().includes(q) ||
-      applicant.email.toLowerCase().includes(q);
+    return sourceApplicants.filter((applicant) => {
+      const matchesSearch =
+        q === '' ||
+        applicant.firstName.toLowerCase().includes(q) ||
+        applicant.lastName.toLowerCase().includes(q) ||
+        applicant.email.toLowerCase().includes(q);
 
-    const matchesLanguage = languageFilter === 'all' || applicant.language === (languageFilter as Language);
+      const matchesLanguage =
+        languageFilter === 'all' || applicant.language === (languageFilter as Language);
 
-    const matchesMentor =
-      mentorFilter === 'all' ||
-      (mentorFilter === 'mentor' && applicant.mentor) ||
-      (mentorFilter === 'colaboradora' && !applicant.mentor);
+      const matchesMentor =
+        mentorFilter === 'all' ||
+        (mentorFilter === 'mentor' && applicant.mentor) ||
+        (mentorFilter === 'colaboradora' && !applicant.mentor);
 
-    return matchesSearch && matchesLanguage && matchesMentor;
-  });
+      // Cuando statusFilter = 'all' dejamos que el filtro de estado se exprese con applicant.deleted
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && !applicant.deleted) ||
+        (statusFilter === 'deleted' && applicant.deleted);
+
+      return matchesSearch && matchesLanguage && matchesMentor && matchesStatus;
+    });
+  }, [sourceApplicants, searchTerm, languageFilter, mentorFilter, statusFilter]);
+
+  const isLoading = applicantsLoading || (statusFilter !== 'active' && deletedLoading);
 
   const handleCreate = async (data: CreateApplicantDto) => {
     try {
       setIsSubmitting(true);
       await create(data);
+      await handleRefresh();
       setActiveModal(null);
     } catch (error) {
       console.error('Error creating applicant:', error);
@@ -178,6 +243,7 @@ export default function ApplicantsPage() {
     try {
       setIsSubmitting(true);
       await updateById(selectedApplicant.id, data);
+      await handleRefresh();
       setActiveModal(null);
       setSelectedApplicant(null);
     } catch (error) {
@@ -197,6 +263,7 @@ export default function ApplicantsPage() {
     try {
       setIsSubmitting(true);
       await deleteById(selectedApplicant.id);
+      await handleRefresh();
       setActiveModal(null);
       setSelectedApplicant(null);
     } catch (error) {
@@ -211,12 +278,53 @@ export default function ApplicantsPage() {
     setActiveModal('view');
   };
 
-  const handleRefresh = async () => {
-    await refresh();
+  const handleRestore = async (applicant: ApplicantListItemDto) => {
+    try {
+      setIsSubmitting(true);
+      await applicantApi.restore(applicant.email);
+      await handleRefresh();
+    } catch (error) {
+      console.error('Error restoring applicant:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
+  const handleRefresh = async () => {
+    if (statusFilter === 'deleted') {
+      setDeletedLoading(true);
+      try {
+        const data = await applicantApi.getDeleted();
+        setDeletedApplicants(data);
+      } finally {
+        setDeletedLoading(false);
+      }
+    } else if (statusFilter === 'all') {
+      setDeletedLoading(true);
+      try {
+        const [_, deleted] = await Promise.all([
+          refreshActive(),
+          applicantApi.getDeleted(),
+        ]);
+        setDeletedApplicants(deleted);
+      } finally {
+        setDeletedLoading(false);
+      }
+    } else {
+      await refreshActive();
+    }
+  };
+
+  const totalBase = useMemo(() => sourceApplicants.length, [sourceApplicants]);
+
+  const emptyLabel = useMemo(() => {
+    if (statusFilter === 'deleted') return 'No hay applicants eliminados';
+    if (statusFilter === 'active') return 'No hay applicants activos';
+    return 'No hay applicants';
+  }, [statusFilter]);
+
   const handleExport = () => {
-    const headers = ['ID', 'Email', 'Nombre', 'Apellido', 'Idioma', 'Tipo', 'Roles'];
+    const headers = ['ID', 'Email', 'Nombre', 'Apellido', 'Idioma', 'Tipo', 'Roles', 'Estado'];
     const csvContent = [
       headers.join(','),
       ...filteredApplicants.map((a) =>
@@ -228,6 +336,7 @@ export default function ApplicantsPage() {
           getLanguageDisplayName((a.language as Language) ?? Language.ES),
           a.mentor ? 'Mentor' : 'Colaboradora',
           `"${a.roles.join(', ')}"`,
+          a.deleted ? 'Eliminado' : 'Activo',
         ].join(','),
       ),
     ].join('\n');
@@ -243,11 +352,11 @@ export default function ApplicantsPage() {
     document.body.removeChild(link);
   };
 
-  if (applicantsError) {
+  if (applicantsError || deletedError) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Error: {applicantsError}</p>
+          <p className="text-red-600 mb-4">Error: {applicantsError || deletedError}</p>
           <button
             onClick={handleRefresh}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
@@ -270,11 +379,11 @@ export default function ApplicantsPage() {
             <div className="flex space-x-3">
               <button
                 onClick={handleRefresh}
-                disabled={applicantsLoading}
+                disabled={isLoading}
                 className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                 type="button"
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${applicantsLoading ? 'animate-spin' : ''}`} />
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                 Actualizar
               </button>
               <button
@@ -349,18 +458,55 @@ export default function ApplicantsPage() {
                 <option value="colaboradora">Solo Colaboradoras</option>
               </select>
             </div>
+
+            {/* Estado */}
+            <div>
+              <label htmlFor="statusFilter" className="sr-only">
+                Filtrar por estado
+              </label>
+              <select
+                id="statusFilter"
+                aria-label="Filtrar por estado"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'deleted')}
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="active">Solo Activos</option>
+                <option value="deleted">Solo Eliminados</option>
+                <option value="all">Todos</option>
+              </select>
+            </div>
           </div>
 
           <div className="mt-3 text-sm text-gray-600">
-            Mostrando {filteredApplicants.length} de {applicants.length} applicants
+            Mostrando {filteredApplicants.length} de {totalBase} applicants
+            {statusFilter === 'deleted' && (
+              <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
+                Eliminados
+              </span>
+            )}
+            {statusFilter === 'active' && (
+              <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                Activos
+              </span>
+            )}
+            {statusFilter === 'all' && (
+              <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
+                Todos
+              </span>
+            )}
           </div>
         </div>
 
         {/* Main Content */}
-        {applicantsLoading ? (
+        {isLoading ? (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
             <span className="ml-3 text-gray-600">Cargando applicants...</span>
+          </div>
+        ) : filteredApplicants.length === 0 ? (
+          <div className="bg-white shadow-md rounded-lg p-10 text-center text-gray-500">
+            {emptyLabel}
           </div>
         ) : (
           <ApplicantList
@@ -368,6 +514,7 @@ export default function ApplicantsPage() {
             onEdit={handleEdit}
             onDelete={handleDeleteConfirm}
             onView={handleView}
+            onRestore={handleRestore}
           />
         )}
 
@@ -442,6 +589,23 @@ export default function ApplicantsPage() {
                   <label className="block text-sm font-medium text-gray-700">Tipo</label>
                   <p className="text-sm text-gray-900">{selectedApplicant.mentor ? 'Mentor' : 'Colaboradora'}</p>
                 </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Creado</label>
+                  <p className="text-sm text-gray-900">
+                    {(() => {
+                      const dt = parseApiTimestamp(selectedApplicant.timestamp as string | undefined);
+                      return dt ? dt.toLocaleString('es-ES') : '—';
+                    })()}
+                  </p>
+                </div>
+                {selectedApplicant.deletedAt && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Eliminado</label>
+                    <p className="text-sm text-gray-900">
+                      {new Date(selectedApplicant.deletedAt).toLocaleString('es-ES')}
+                    </p>
+                  </div>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Roles Profesionales</label>

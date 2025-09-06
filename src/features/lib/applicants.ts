@@ -11,8 +11,6 @@ import {
   UpdateApplicantDto,
 } from '../types/applicant';
 
-// Si defines NEXT_PUBLIC_API_URL -> llamadas absolutas (ej: http://localhost:8080)
-// Si NO está -> usamos rutas relativas y dejamos que actúe el rewrite de Next.
 const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
 
 // Clase de error del cliente, para no chocar con tu interface ApiError
@@ -145,6 +143,11 @@ export const applicantApi = {
   getExpiredDeleted: async (): Promise<Applicant[]> => {
     return fetchApi('admin/expired-deleted');
   },
+
+  getDeleted: async (): Promise<ApplicantListItemDto[]> => {
+  return fetchApi('deleted');
+},
+
 
   // UPDATE
   updateById: async (id: number, dto: UpdateApplicantDto): Promise<Applicant> => {

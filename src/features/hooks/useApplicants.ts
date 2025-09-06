@@ -1,92 +1,6 @@
-// src/features/hooks/useApplicants.ts
-
-// import { getApplicants } from '@/features/applicants/api/adminApplicants.api';
-// import type { Applicant } from '@features/types/applicant.types';
-// import { useCallback, useEffect, useState } from 'react';
-
-// export const useApplicants = () => {
-//   const [rows, setRows] = useState<Applicant[]>([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState('');
-
-//   const normalizeApiData = (apiData: unknown): Applicant[] => {
-//     if (apiData && typeof apiData === 'object' && 'content' in apiData) {
-//       const pagedResponse = apiData as { content: Applicant[] };
-//       return pagedResponse.content;
-//     }
-    
-//     if (Array.isArray(apiData)) {
-//       return apiData;
-//     }
-    
-//     return [];
-//   };
-
-//   const loadApplicants = useCallback(async () => {
-//     const email = sessionStorage.getItem('demo_email') || '';
-//     const pass = sessionStorage.getItem('demo_pass') || '';
-    
-//     if (!email || !pass) {
-//       setError('No hay credenciales de autenticación disponibles');
-//       setLoading(false);
-//       return;
-//     }
-
-//     setLoading(true);
-//     setError('');
-    
-//     try {
-//       console.log('Cargando todos los aplicantes desde el backend...');
-      
-//       const data = await getApplicants(email, pass, 0, 10000);
-//       console.log('Datos recibidos del backend:', data);
-      
-//       const normalizedData = normalizeApiData(data);
-//       console.log(`Total aplicantes obtenidos: ${normalizedData.length}`);
-      
-//       setRows(normalizedData);
-      
-//     } catch (err: unknown) {
-//       console.error('Error al cargar applicants desde el backend:', err);
-      
-//       let errorMessage = 'Error al conectar con el servidor';
-//       if (err instanceof Error) {
-//         if (err.message.includes('Failed to fetch')) {
-//           errorMessage = 'No se puede conectar al servidor de backend';
-//         } else if (err.message.includes('401')) {
-//           errorMessage = 'Credenciales de autenticación incorrectas';
-//         } else if (err.message.includes('403')) {
-//           errorMessage = 'No tienes permisos para acceder a esta información';
-//         } else if (err.message.includes('500')) {
-//           errorMessage = 'Error interno del servidor';
-//         } else {
-//           errorMessage = `Error: ${err.message}`;
-//         }
-//       }
-      
-//       setError(errorMessage);
-//       setRows([]);
-//     } finally {
-//       setLoading(false);
-//     }
-//   }, []);
-
-//   useEffect(() => {
-//     loadApplicants();
-//   }, [loadApplicants]);
-
-//   return {
-//     rows,
-//     loading,
-//     error,
-//     reload: loadApplicants
-//   };
-// };
-
-
-
-// hooks/useApplicants.ts
-import { applicantApi } from '../../features/lib/applicants'; 
+// features/hooks/useApplicants.ts
+import { useCallback, useEffect, useState } from 'react';
+import { ApiClientError, applicantApi } from '../lib/applicants'; // ✅ ruta correcta
 import {
   Applicant,
   ApplicantDetailDto,
@@ -95,25 +9,27 @@ import {
   PaginatedResponse,
   UpdateApplicantDto,
 } from '../types/applicant';
-import { useCallback, useEffect, useState } from 'react';
-import { ApiClientError } from '../../features/lib/applicants';
 
 interface UseApplicantsResult {
   applicants: ApplicantListItemDto[];
   loading: boolean;
   error: string | null;
+  statusFilter: 'active' | 'deleted' | 'all';
+  setStatusFilter: (filter: 'active' | 'deleted' | 'all') => void;
   refresh: () => Promise<void>;
   create: (dto: CreateApplicantDto) => Promise<Applicant>;
   updateById: (id: number, dto: UpdateApplicantDto) => Promise<Applicant>;
   updateByEmail: (email: string, dto: UpdateApplicantDto) => Promise<Applicant>;
   deleteById: (id: number) => Promise<void>;
   deleteByEmail: (email: string) => Promise<void>;
+  restoreByEmail: (email: string) => Promise<Applicant>;
 }
 
 export function useApplicants(): UseApplicantsResult {
   const [applicants, setApplicants] = useState<ApplicantListItemDto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'active' | 'deleted' | 'all'>('active');
 
   const formatErr = (err: unknown, fallback: string) =>
     err instanceof ApiClientError
@@ -126,14 +42,26 @@ export function useApplicants(): UseApplicantsResult {
     try {
       setLoading(true);
       setError(null);
-      const data = await applicantApi.getAll();
+      let data: ApplicantListItemDto[] = [];
+      if (statusFilter === 'active') {
+        data = await applicantApi.getAll();
+      } else if (statusFilter === 'deleted') {
+        data = await applicantApi.getExpiredDeleted();
+      } else if (statusFilter === 'all') {
+        // Si tienes endpoint para todos, úsalo aquí. Si no, une ambos resultados:
+        const [active, deleted] = await Promise.all([
+          applicantApi.getAll(),
+          applicantApi.getExpiredDeleted(),
+        ]);
+        data = [...active, ...deleted];
+      }
       setApplicants(data);
     } catch (err) {
       setError(formatErr(err, 'Error loading applicants'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [statusFilter]);
 
   const create = useCallback(
     async (dto: CreateApplicantDto): Promise<Applicant> => {
@@ -208,20 +136,39 @@ export function useApplicants(): UseApplicantsResult {
     [refresh]
   );
 
+
+  const restoreByEmail = useCallback(
+    async (email: string): Promise<Applicant> => {
+      try {
+        const restored = await applicantApi.restore(email); // usa tu restore por email
+        await refresh();
+        return restored;
+      } catch (err) {
+        const errorMsg = formatErr(err, 'Error restoring applicant');
+        setError(errorMsg);
+        throw err;
+      }
+    },
+    [refresh]
+  );
+
   useEffect(() => {
     refresh();
-  }, [refresh]);
+  }, [refresh, statusFilter]);
 
   return {
     applicants,
     loading,
     error,
+    statusFilter,
+    setStatusFilter,
     refresh,
     create,
     updateById,
     updateByEmail,
     deleteById,
     deleteByEmail,
+    restoreByEmail,
   };
 }
 
