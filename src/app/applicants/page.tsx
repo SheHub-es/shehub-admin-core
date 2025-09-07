@@ -1,9 +1,14 @@
 'use client';
 
-import { Download, Plus, RefreshCw, Search } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Download, Plus, RefreshCw, Users, Bell, FileText, LogOut, ChevronLeft, ChevronRight, User, BarChart3 } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { ApplicantForm } from '../../components/ApplicantForm';
 import { ApplicantList } from '../../components/ApplicantList';
+import { ApplicantStats, type ApplicantStatsRef } from '../../components/ApplicantStats';
+import { SearchAndFilters } from '../../components/SearchAndFilters';
+import { useApplicantFilters } from '../../features/hooks/useApplicantFilter';
 import { useApplicants } from '../../features/hooks/useApplicants';
 import { applicantApi } from '../../features/lib/applicants';
 import {
@@ -14,7 +19,7 @@ import {
   getLanguageDisplayName,
 } from '../../features/types/applicant';
 
-// Helper para parsear timestamp del backend ("yyyy-MM-dd HH:mm:ss" -> Date)
+// Helper para parsear timestamp del backend
 const parseApiTimestamp = (ts?: string) => {
   if (!ts) return null;
   const isoish = ts.replace(' ', 'T');
@@ -127,6 +132,15 @@ function ConfirmModal({
 }
 
 export default function Page() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const statsRef = useRef<ApplicantStatsRef>(null);
+  
+  // Estados del sidebar
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
+  
+  // Hook para manejar applicants
   const {
     applicants,
     loading: applicantsLoading,
@@ -137,31 +151,71 @@ export default function Page() {
     deleteById,
   } = useApplicants();
 
+  // Hook para manejar filtros
+  const {
+    filters,
+    setSearchTerm,
+    setLanguageFilter,
+    setMentorFilter,
+    setStatusFilter,
+    clearAllFilters,
+    applyFilters,
+    hasActiveFilters,
+  } = useApplicantFilters('active');
+
+  // Estados para modales y UI
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [selectedApplicant, setSelectedApplicant] = useState<ApplicantListItemDto | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [languageFilter, setLanguageFilter] = useState<Language | 'all'>('all');
-  const [mentorFilter, setMentorFilter] = useState<'all' | 'mentor' | 'colaboradora'>('all');
-  // Estado de vista: activos, eliminados o todos
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deleted'>('active');
 
-  // Estado para eliminados traídos desde BE
+  // Estado para eliminados
   const [deletedApplicants, setDeletedApplicants] = useState<ApplicantListItemDto[]>([]);
   const [deletedLoading, setDeletedLoading] = useState(false);
   const [deletedError, setDeletedError] = useState<string | null>(null);
+
+  // Funciones del sidebar
+  useEffect(() => {
+    const email = sessionStorage.getItem('demo_email') || '';
+    setUserEmail(email);
+  }, []);
+
+  const menuItems = [
+    { icon: Users, label: 'Applicants', href: '/applicants', badge: 0 },
+    { icon: BarChart3, label: 'Dashboard', href: '/dashboard', badge: 0 },
+    { icon: Bell, label: 'Notificaciones', href: '/notifications', badge: 3 },
+    { icon: FileText, label: 'Formularios', href: '/forms', badge: 0 },
+    { icon: User, label: 'Usuarios', href: '/users', badge: 0 },
+  ];
+
+  const handleNavigation = (href: string) => {
+    router.push(href);
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('demo_email');
+    sessionStorage.removeItem('demo_pass');
+    router.push('/');
+  };
+
+  const getUserInitials = (email: string) => {
+    return email
+      .split('@')[0]
+      .split('.')
+      .map(part => part.charAt(0).toUpperCase())
+      .join('')
+      .slice(0, 2);
+  };
 
   // Carga según statusFilter
   useEffect(() => {
     const load = async () => {
       try {
-        if (statusFilter === 'deleted') {
+        if (filters.statusFilter === 'deleted') {
           setDeletedLoading(true);
           setDeletedError(null);
           const data = await applicantApi.getDeleted();
           setDeletedApplicants(data);
-        } else if (statusFilter === 'all') {
-          // Cargar ambos conjuntos
+        } else if (filters.statusFilter === 'all') {
           setDeletedLoading(true);
           setDeletedError(null);
           const [_, deleted] = await Promise.all([
@@ -170,55 +224,29 @@ export default function Page() {
           ]);
           setDeletedApplicants(deleted);
         } else {
-          // Solo activos
           await refreshActive();
         }
       } catch (e) {
         setDeletedError(e instanceof Error ? e.message : 'Error cargando eliminados');
       } finally {
-        if (statusFilter !== 'active') setDeletedLoading(false);
+        if (filters.statusFilter !== 'active') setDeletedLoading(false);
       }
     };
 
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, refreshActive]);
+  }, [filters.statusFilter, refreshActive]);
 
-  // Fuente según status
   const sourceApplicants = useMemo(() => {
-    if (statusFilter === 'deleted') return deletedApplicants;
-    if (statusFilter === 'all') return [...applicants, ...deletedApplicants];
-    return applicants; // active
-  }, [statusFilter, applicants, deletedApplicants]);
+    if (filters.statusFilter === 'deleted') return deletedApplicants;
+    if (filters.statusFilter === 'all') return [...applicants, ...deletedApplicants];
+    return applicants;
+  }, [filters.statusFilter, applicants, deletedApplicants]);
 
   const filteredApplicants = useMemo(() => {
-    const q = searchTerm.toLowerCase();
-    return sourceApplicants.filter((applicant) => {
-      const matchesSearch =
-        q === '' ||
-        applicant.firstName.toLowerCase().includes(q) ||
-        applicant.lastName.toLowerCase().includes(q) ||
-        applicant.email.toLowerCase().includes(q);
+    return applyFilters(sourceApplicants);
+  }, [applyFilters, sourceApplicants]);
 
-      const matchesLanguage =
-        languageFilter === 'all' || applicant.language === (languageFilter as Language);
-
-      const matchesMentor =
-        mentorFilter === 'all' ||
-        (mentorFilter === 'mentor' && applicant.mentor) ||
-        (mentorFilter === 'colaboradora' && !applicant.mentor);
-
-      // Cuando statusFilter = 'all' dejamos que el filtro de estado se exprese con applicant.deleted
-      const matchesStatus =
-        statusFilter === 'all' ||
-        (statusFilter === 'active' && !applicant.deleted) ||
-        (statusFilter === 'deleted' && applicant.deleted);
-
-      return matchesSearch && matchesLanguage && matchesMentor && matchesStatus;
-    });
-  }, [sourceApplicants, searchTerm, languageFilter, mentorFilter, statusFilter]);
-
-  const isLoading = applicantsLoading || (statusFilter !== 'active' && deletedLoading);
+  const isLoading = applicantsLoading || (filters.statusFilter !== 'active' && deletedLoading);
 
   const handleCreate = async (data: CreateApplicantDto) => {
     try {
@@ -291,7 +319,7 @@ export default function Page() {
   };
 
   const handleRefresh = async () => {
-    if (statusFilter === 'deleted') {
+    if (filters.statusFilter === 'deleted') {
       setDeletedLoading(true);
       try {
         const data = await applicantApi.getDeleted();
@@ -299,7 +327,7 @@ export default function Page() {
       } finally {
         setDeletedLoading(false);
       }
-    } else if (statusFilter === 'all') {
+    } else if (filters.statusFilter === 'all') {
       setDeletedLoading(true);
       try {
         const [_, deleted] = await Promise.all([
@@ -313,15 +341,19 @@ export default function Page() {
     } else {
       await refreshActive();
     }
+    
+    if (statsRef.current) {
+      await statsRef.current.refresh();
+    }
   };
 
   const totalBase = useMemo(() => sourceApplicants.length, [sourceApplicants]);
 
   const emptyLabel = useMemo(() => {
-    if (statusFilter === 'deleted') return 'No hay applicants eliminados';
-    if (statusFilter === 'active') return 'No hay applicants activos';
+    if (filters.statusFilter === 'deleted') return 'No hay applicants eliminados';
+    if (filters.statusFilter === 'active') return 'No hay applicants activos';
     return 'No hay applicants';
-  }, [statusFilter]);
+  }, [filters.statusFilter]);
 
   const handleExport = () => {
     const headers = ['ID', 'Email', 'Nombre', 'Apellido', 'Idioma', 'Tipo', 'Roles', 'Estado'];
@@ -354,12 +386,13 @@ export default function Page() {
 
   if (applicantsError || deletedError) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background-light)' }}>
         <div className="text-center">
           <p className="text-red-600 mb-4">Error: {applicantsError || deletedError}</p>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+            className="px-4 py-2 text-white rounded-md hover:opacity-90"
+            style={{ backgroundColor: 'var(--color-primary)' }}
             type="button"
           >
             Reintentar
@@ -370,291 +403,351 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex justify-between items-center mb-4">
-            <h1 className="text-3xl font-bold text-gray-900">Gestión de Applicants</h1>
-            <div className="flex space-x-3">
-              <button
-                onClick={handleRefresh}
-                disabled={isLoading}
-                className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                type="button"
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Actualizar
-              </button>
-              <button
-                onClick={handleExport}
-                className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                type="button"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </button>
-              <button
-                onClick={() => setActiveModal('create')}
-                className="flex items-center px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                type="button"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Applicant
-              </button>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background-light)' }}>
+      {/* Sidebar */}
+      <div 
+        className={`fixed left-0 top-0 h-full border-r border-gray-200 flex flex-col transition-all duration-300 z-40 ${
+          sidebarCollapsed ? 'w-16' : 'w-64'
+        }`}
+        style={{ backgroundColor: 'var(--color-background-light)' }}
+      >
+        {/* Header del sidebar */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          {!sidebarCollapsed && (
+            <div className="flex items-center gap-2">
+              <Image
+                src="/images/logo-shehub.png"
+                alt="SheHub"
+                width={120}
+                height={36}
+                className="h-8 w-auto"
+              />
             </div>
-          </div>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white p-4 rounded-lg shadow-md mb-6">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Buscar por nombre, apellido o email..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="languageFilter" className="sr-only">
-                Filtrar por idioma
-              </label>
-              <select
-                id="languageFilter"
-                aria-label="Filtrar por idioma"
-                value={languageFilter}
-                onChange={(e) => setLanguageFilter(e.target.value as Language | 'all')}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Todos los idiomas</option>
-                <option value={Language.ES}>{getLanguageDisplayName(Language.ES)}</option>
-                <option value={Language.EN}>{getLanguageDisplayName(Language.EN)}</option>
-                <option value={Language.CAT}>{getLanguageDisplayName(Language.CAT)}</option>
-                <option value={Language.EN_GB}>{getLanguageDisplayName(Language.EN_GB)}</option>
-                <option value={Language.EN_US}>{getLanguageDisplayName(Language.EN_US)}</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="mentorFilter" className="sr-only">
-                Filtrar por tipo
-              </label>
-              <select
-                id="mentorFilter"
-                aria-label="Filtrar por tipo"
-                value={mentorFilter}
-                onChange={(e) => setMentorFilter(e.target.value as 'all' | 'mentor' | 'colaboradora')}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">Todos los tipos</option>
-                <option value="mentor">Solo Mentores</option>
-                <option value="colaboradora">Solo Colaboradoras</option>
-              </select>
-            </div>
-
-            {/* Estado */}
-            <div>
-              <label htmlFor="statusFilter" className="sr-only">
-                Filtrar por estado
-              </label>
-              <select
-                id="statusFilter"
-                aria-label="Filtrar por estado"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as 'all' | 'active' | 'deleted')}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="active">Solo Activos</option>
-                <option value="deleted">Solo Eliminados</option>
-                <option value="all">Todos</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mt-3 text-sm text-gray-600">
-            Mostrando {filteredApplicants.length} de {totalBase} applicants
-            {statusFilter === 'deleted' && (
-              <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-medium">
-                Eliminados
-              </span>
-            )}
-            {statusFilter === 'active' && (
-              <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                Activos
-              </span>
-            )}
-            {statusFilter === 'all' && (
-              <span className="ml-2 px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs font-medium">
-                Todos
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Main Content */}
-        {isLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-            <span className="ml-3 text-gray-600">Cargando applicants...</span>
-          </div>
-        ) : filteredApplicants.length === 0 ? (
-          <div className="bg-white shadow-md rounded-lg p-10 text-center text-gray-500">
-            {emptyLabel}
-          </div>
-        ) : (
-          <ApplicantList
-            applicants={filteredApplicants}
-            onEdit={handleEdit}
-            onDelete={handleDeleteConfirm}
-            onView={handleView}
-            onRestore={handleRestore}
-          />
-        )}
-
-        {/* Modals */}
-        <Modal isOpen={activeModal === 'create'} onClose={() => setActiveModal(null)} title="Crear Nuevo Applicant" size="lg">
-          <ApplicantForm
-            mode="create"
-            onSubmit={(data) => handleCreate(data as CreateApplicantDto)}
-            onCancel={() => setActiveModal(null)}
-            isLoading={isSubmitting}
-          />
-        </Modal>
-
-        <Modal
-          isOpen={activeModal === 'edit'}
-          onClose={() => {
-            setActiveModal(null);
-            setSelectedApplicant(null);
-          }}
-          title="Editar Applicant"
-          size="lg"
-        >
-          {selectedApplicant && (
-            <ApplicantForm
-              mode="update"
-              initialData={selectedApplicant}
-              onSubmit={(data) => handleUpdate(data as UpdateApplicantDto)}
-              onCancel={() => {
-                setActiveModal(null);
-                setSelectedApplicant(null);
-              }}
-              isLoading={isSubmitting}
-            />
           )}
-        </Modal>
+          
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            title={sidebarCollapsed ? 'Expandir menú' : 'Contraer menú'}
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-4 w-4 text-gray-600" />
+            ) : (
+              <ChevronLeft className="h-4 w-4 text-gray-600" />
+            )}
+          </button>
+        </div>
 
-        <Modal
-          isOpen={activeModal === 'view'}
-          onClose={() => {
-            setActiveModal(null);
-            setSelectedApplicant(null);
-          }}
-          title="Detalles del Applicant"
-          size="md"
-        >
-          {selectedApplicant && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">ID</label>
-                  <p className="text-sm text-gray-900">{selectedApplicant.id}</p>
+        {/* Navegación */}
+        <nav className="flex-1 p-4 space-y-1">
+          {menuItems.map((item) => {
+            const isActive = pathname === item.href;
+            const Icon = item.icon;
+            
+            return (
+              <button
+                key={item.href}
+                onClick={() => handleNavigation(item.href)}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group relative ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}
+                style={isActive ? { backgroundColor: 'var(--color-primary)' } : {}}
+                title={sidebarCollapsed ? item.label : undefined}
+              >
+                <div className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}>
+                  <Icon className="h-5 w-5" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Email</label>
-                  <p className="text-sm text-gray-900">{selectedApplicant.email}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Nombre</label>
-                  <p className="text-sm text-gray-900">{selectedApplicant.firstName}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Apellido</label>
-                  <p className="text-sm text-gray-900">{selectedApplicant.lastName}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Idioma</label>
-                  <p className="text-sm text-gray-900">
-                    {getLanguageDisplayName((selectedApplicant.language as Language) ?? Language.ES)}
-                  </p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Tipo</label>
-                  <p className="text-sm text-gray-900">{selectedApplicant.mentor ? 'Mentor' : 'Colaboradora'}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Creado</label>
-                  <p className="text-sm text-gray-900">
-                    {(() => {
-                      const dt = parseApiTimestamp(selectedApplicant.timestamp as string | undefined);
-                      return dt ? dt.toLocaleString('es-ES') : '—';
-                    })()}
-                  </p>
-                </div>
-                {selectedApplicant.deletedAt && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Eliminado</label>
-                    <p className="text-sm text-gray-900">
-                      {new Date(selectedApplicant.deletedAt).toLocaleString('es-ES')}
-                    </p>
-                  </div>
-                )}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Roles Profesionales</label>
-                {selectedApplicant.roles.length === 0 ? (
-                  <p className="text-sm text-gray-500 italic">Sin roles definidos</p>
-                ) : (
-                  <div className="space-y-2">
-                    {selectedApplicant.roles.map((role, index) => (
-                      <span
-                        key={`${role}-${index}`}
-                        className="inline-block mr-2 mb-2 px-3 py-1 text-sm rounded-md bg-indigo-100 text-indigo-800 font-medium"
-                      >
-                        {role}
+                
+                {!sidebarCollapsed && (
+                  <>
+                    <span className="font-medium text-sm truncate">{item.label}</span>
+                    {item.badge && item.badge > 0 && (
+                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                        {item.badge > 99 ? '99+' : item.badge}
                       </span>
-                    ))}
+                    )}
+                  </>
+                )}
+                
+                {sidebarCollapsed && item.badge && item.badge > 0 && (
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                    {item.badge > 9 ? '9+' : item.badge}
                   </div>
                 )}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Perfil de usuario */}
+        <div className="p-4 border-t border-gray-200">
+          <div className={`flex items-center gap-3 p-3 rounded-lg ${sidebarCollapsed ? 'justify-center' : ''}`}>
+            <div 
+              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm"
+              style={{ backgroundColor: 'var(--color-primary)' }}
+            >
+              {getUserInitials(userEmail)}
+            </div>
+            
+            {!sidebarCollapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900 truncate">{userEmail}</p>
+                <p className="text-xs text-gray-500">Administradora</p>
               </div>
-              <div className="flex justify-end pt-4">
+            )}
+          </div>
+          
+          <button
+            onClick={handleLogout}
+            className={`w-full flex items-center gap-2 px-3 py-2 mt-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors ${
+              sidebarCollapsed ? 'justify-center' : ''
+            }`}
+            title={sidebarCollapsed ? 'Cerrar Sesión' : undefined}
+          >
+            <LogOut className="h-4 w-4" />
+            {!sidebarCollapsed && <span>Cerrar Sesión</span>}
+          </button>
+        </div>
+      </div>
+
+      {/* Contenido principal */}
+      <div 
+        className={`transition-all duration-300 ${
+          sidebarCollapsed ? 'ml-16' : 'ml-64'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h1 className="text-3xl font-bold" style={{ color: 'var(--color-foreground)' }}>
+                Gestión de Applicants
+              </h1>
+              <div className="flex space-x-3">
                 <button
-                  onClick={() => {
-                    setActiveModal(null);
-                    setSelectedApplicant(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                   type="button"
                 >
-                  Cerrar
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  Actualizar
+                </button>
+                <button
+                  onClick={handleExport}
+                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="button"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </button>
+                <button
+                  onClick={() => setActiveModal('create')}
+                  className="flex items-center px-4 py-2 text-white rounded-md hover:opacity-90 focus:outline-none focus:ring-2"
+                  style={{ backgroundColor: 'var(--color-primary)' }}
+                  type="button"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nuevo Applicant
                 </button>
               </div>
             </div>
-          )}
-        </Modal>
+          </div>
 
-        <ConfirmModal
-          isOpen={activeModal === 'delete'}
-          onClose={() => {
-            setActiveModal(null);
-            setSelectedApplicant(null);
-          }}
-          onConfirm={handleDelete}
-          title="Confirmar Eliminación"
-          message={`¿Estás seguro de que quieres eliminar el applicant "${selectedApplicant?.firstName} ${selectedApplicant?.lastName}"? Esta acción no se puede deshacer.`}
-          isLoading={isSubmitting}
-        />
+          {/* Estadísticas */}
+          <div className="mb-8">
+            <ApplicantStats ref={statsRef} />
+          </div>
+
+          {/* Filtros */}
+          <SearchAndFilters
+            searchTerm={filters.searchTerm}
+            onSearchChange={setSearchTerm}
+            languageFilter={filters.languageFilter}
+            onLanguageFilterChange={setLanguageFilter}
+            mentorFilter={filters.mentorFilter}
+            onMentorFilterChange={setMentorFilter}
+            statusFilter={filters.statusFilter}
+            onStatusFilterChange={setStatusFilter}
+            filteredCount={filteredApplicants.length}
+            totalCount={totalBase}
+          />
+
+          {/* Botón para limpiar filtros */}
+          {hasActiveFilters && (
+            <div className="mb-4">
+              <button
+                onClick={clearAllFilters}
+                className="text-sm underline hover:opacity-80"
+                style={{ color: 'var(--color-primary)' }}
+                type="button"
+              >
+                Limpiar filtros de búsqueda
+              </button>
+            </div>
+          )}
+
+          {/* Contenido principal */}
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+              <span className="ml-3 text-gray-600">Cargando applicants...</span>
+            </div>
+          ) : filteredApplicants.length === 0 ? (
+            <div className="bg-white shadow-md rounded-lg p-10 text-center text-gray-500">
+              {emptyLabel}
+            </div>
+          ) : (
+            <ApplicantList
+              applicants={filteredApplicants}
+              onEdit={handleEdit}
+              onDelete={handleDeleteConfirm}
+              onView={handleView}
+              onRestore={handleRestore}
+            />
+          )}
+
+          {/* Modales */}
+          <Modal isOpen={activeModal === 'create'} onClose={() => setActiveModal(null)} title="Crear Nuevo Applicant" size="lg">
+            <ApplicantForm
+              mode="create"
+              onSubmit={(data) => handleCreate(data as CreateApplicantDto)}
+              onCancel={() => setActiveModal(null)}
+              isLoading={isSubmitting}
+            />
+          </Modal>
+
+          <Modal
+            isOpen={activeModal === 'edit'}
+            onClose={() => {
+              setActiveModal(null);
+              setSelectedApplicant(null);
+            }}
+            title="Editar Applicant"
+            size="lg"
+          >
+            {selectedApplicant && (
+              <ApplicantForm
+                mode="update"
+                initialData={selectedApplicant}
+                onSubmit={(data) => handleUpdate(data as UpdateApplicantDto)}
+                onCancel={() => {
+                  setActiveModal(null);
+                  setSelectedApplicant(null);
+                }}
+                isLoading={isSubmitting}
+              />
+            )}
+          </Modal>
+
+          <Modal
+            isOpen={activeModal === 'view'}
+            onClose={() => {
+              setActiveModal(null);
+              setSelectedApplicant(null);
+            }}
+            title="Detalles del Applicant"
+            size="md"
+          >
+            {selectedApplicant && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">ID</label>
+                    <p className="text-sm text-gray-900">{selectedApplicant.id}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <p className="text-sm text-gray-900">{selectedApplicant.email}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Nombre</label>
+                    <p className="text-sm text-gray-900">{selectedApplicant.firstName}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Apellido</label>
+                    <p className="text-sm text-gray-900">{selectedApplicant.lastName}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Idioma</label>
+                    <p className="text-sm text-gray-900">
+                      {getLanguageDisplayName((selectedApplicant.language as Language) ?? Language.ES)}
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Tipo</label>
+                    <p className="text-sm text-gray-900">{selectedApplicant.mentor ? 'Mentor' : 'Colaboradora'}</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Creado</label>
+                    <p className="text-sm text-gray-900">
+                      {(() => {
+                        const dt = parseApiTimestamp(selectedApplicant.timestamp as string | undefined);
+                        return dt ? dt.toLocaleString('es-ES') : '—';
+                      })()}
+                    </p>
+                  </div>
+                  {selectedApplicant.deletedAt && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Eliminado</label>
+                      <p className="text-sm text-gray-900">
+                        {new Date(selectedApplicant.deletedAt).toLocaleString('es-ES')}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Roles Profesionales</label>
+                  {selectedApplicant.roles.length === 0 ? (
+                    <p className="text-sm text-gray-500 italic">Sin roles definidos</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedApplicant.roles.map((role, index) => (
+                        <span
+                          key={`${role}-${index}`}
+                          className="inline-block mr-2 mb-2 px-3 py-1 text-sm rounded-md font-medium"
+                          style={{ 
+                            backgroundColor: 'var(--color-primary-hover)', 
+                            color: 'var(--color-primary)' 
+                          }}
+                        >
+                          {role}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={() => {
+                      setActiveModal(null);
+                      setSelectedApplicant(null);
+                    }}
+                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                    type="button"
+                  >
+                    Cerrar
+                  </button>
+                </div>
+              </div>
+            )}
+          </Modal>
+
+          <ConfirmModal
+            isOpen={activeModal === 'delete'}
+            onClose={() => {
+              setActiveModal(null);
+              setSelectedApplicant(null);
+            }}
+            onConfirm={handleDelete}
+            title="Confirmar Eliminación"
+            message={`¿Estás seguro de que quieres eliminar el applicant "${selectedApplicant?.firstName} ${selectedApplicant?.lastName}"? Esta acción no se puede deshacer.`}
+            isLoading={isSubmitting}
+          />
+        </div>
       </div>
     </div>
   );
 }
-
-
-

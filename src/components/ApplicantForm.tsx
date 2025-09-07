@@ -25,14 +25,12 @@ export function ApplicantForm({
   mode,
 }: ApplicantFormProps) {
   const [formData, setFormData] = useState({
-    // Nota: email solo se usa en create; en update lo ignoraremos al enviar
+    
     email: initialData.email ?? '',
     firstName: initialData.firstName ?? '',
     lastName: initialData.lastName ?? '',
     mentor: initialData.mentor ?? false,
-    // initialData.language puede venir como string; lo normalizamos al enum para el select
     language: ((initialData.language as Language) ?? Language.ES) as Language,
-    // En el formulario lo editamos como string separado por comas
     roles: Array.isArray(initialData.roles) ? initialData.roles.join(', ') : '',
   });
 
@@ -45,25 +43,23 @@ export function ApplicantForm({
       .filter((r) => r.length > 0);
 
     if (mode === 'create') {
-      // CreateApplicantDto tiene language?: string; enviamos el nombre del enum como string
       const payload: CreateApplicantDto = {
         email: formData.email.trim(),
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         mentor: formData.mentor,
-        language: formData.language, // el backend acepta el string del enum (p.ej. "ES")
+        language: formData.language, 
         roles: rolesArray,
       };
       await onSubmit(payload);
     } else {
-      // En update NO enviamos email para no pisarlo con "" y evitar 500
      const payload: UpdateApplicantDto & { email: string } = {
   firstName: formData.firstName.trim(),
   lastName: formData.lastName.trim(),
   mentor: formData.mentor,
   language: formData.language,
   roles: rolesArray,
-  email: (initialData.email ?? '').trim(), // 👈 añade el email existente
+  email: (initialData.email ?? '').trim(), 
 };
 
 await onSubmit(payload as UpdateApplicantDto);

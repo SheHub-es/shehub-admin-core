@@ -1,165 +1,121 @@
-// src/features/hooks/useApplicantFilter.ts
-
-import type { Applicant, Language, TabType } from '@features/types/applicant.types';
+// hooks/useApplicantFilters.ts
 import { useMemo, useState } from 'react';
+import { ApplicantListItemDto, Language } from '../types/applicant';
 
-export const useApplicantFilter = (applicants: Applicant[]) => {
-  const [activeTab, setActiveTab] = useState<TabType>('all');
+interface ApplicantFilters {
+  searchTerm: string;
+  languageFilter: Language | 'all';
+  mentorFilter: 'all' | 'mentor' | 'colaboradora';
+  statusFilter: 'all' | 'active' | 'deleted';
+}
+
+interface UseApplicantFiltersResult {
+  // Estados de filtros
+  filters: ApplicantFilters;
+  
+  // Setters individuales
+  setSearchTerm: (term: string) => void;
+  setLanguageFilter: (filter: Language | 'all') => void;
+  setMentorFilter: (filter: 'all' | 'mentor' | 'colaboradora') => void;
+  setStatusFilter: (filter: 'all' | 'active' | 'deleted') => void;
+  
+  // Función para limpiar todos los filtros
+  clearAllFilters: () => void;
+  
+  // Función para aplicar filtros a una lista de applicants
+  applyFilters: (applicants: ApplicantListItemDto[]) => ApplicantListItemDto[];
+  
+  // Función auxiliar para verificar si hay filtros activos
+  hasActiveFilters: boolean;
+}
+
+export function useApplicantFilters(initialStatusFilter: 'all' | 'active' | 'deleted' = 'active'): UseApplicantFiltersResult {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLanguage, setSelectedLanguage] = useState<Language | 'all'>('all');
+  const [languageFilter, setLanguageFilter] = useState<Language | 'all'>('all');
+  const [mentorFilter, setMentorFilter] = useState<'all' | 'mentor' | 'colaboradora'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deleted'>(initialStatusFilter);
 
-  // Función de búsqueda mejorada
-  const advancedSearch = (applicant: Applicant, searchTerm: string): boolean => {
-    if (!searchTerm.trim()) return true;
-
-    const term = searchTerm.toLowerCase().trim();
-    const email = applicant.email.toLowerCase();
-    const fullName = `${applicant.firstName} ${applicant.lastName}`.toLowerCase();
-    const firstName = applicant.firstName.toLowerCase();
-    const lastName = applicant.lastName.toLowerCase();
-    const roles = applicant.roles.map(role => role.toLowerCase()).join(' ');
-
-    // Búsqueda exacta por email completo
-    if (term.includes('@') && email === term) {
-      return true;
-    }
-
-    // Búsqueda por dominio de email
-    if (term.includes('@') && term.startsWith('@')) {
-      const domain = term.substring(1);
-      return email.includes(domain);
-    }
-
-    // Búsqueda por usuario de email (parte antes del @)
-    if (term.includes('@') && !term.startsWith('@')) {
-      const [username, domain] = term.split('@');
-      if (domain) {
-        return email.includes(username) && email.includes(domain);
-      } else {
-        return email.split('@')[0].includes(username);
-      }
-    }
-
-    // Búsqueda parcial en email (sin @)
-    if (email.includes(term)) {
-      return true;
-    }
-
-    // Búsqueda por nombre completo
-    if (fullName.includes(term)) {
-      return true;
-    }
-
-    // Búsqueda por nombre o apellido individual
-    if (firstName.includes(term) || lastName.includes(term)) {
-      return true;
-    }
-
-    // Búsqueda por iniciales (ej: "jd" para "John Doe")
-    if (term.length === 2) {
-      const initials = firstName.charAt(0) + lastName.charAt(0);
-      if (initials === term) {
-        return true;
-      }
-    }
-
-    // Búsqueda en roles
-    if (roles.includes(term)) {
-      return true;
-    }
-
-    // Búsqueda por palabras múltiples (cada palabra debe encontrarse)
-    if (term.includes(' ')) {
-      const words = term.split(' ').filter(word => word.length > 0);
-      return words.every(word => 
-        email.includes(word) || 
-        fullName.includes(word) || 
-        roles.includes(word)
-      );
-    }
-
-    return false;
+  const filters: ApplicantFilters = {
+    searchTerm,
+    languageFilter,
+    mentorFilter,
+    statusFilter,
   };
 
-  const filteredApplicants = useMemo(() => {
-    return applicants.filter(applicant => {
-      const matchesSearch = advancedSearch(applicant, searchTerm);
-      const matchesLanguage = selectedLanguage === 'all' || applicant.language === selectedLanguage;
-      
-      let matchesTab = false;
-      switch(activeTab) {
-        case 'all':
-          matchesTab = true;
-          break;
-        case 'pending':
-          matchesTab = applicant.userId === null;
-          break;
-        case 'converted':
-          matchesTab = applicant.userId !== null;
-          break;
-        case 'mentors':
-          matchesTab = applicant.mentor === true;
-          break;
-        case 'colaboradoras':
-          matchesTab = applicant.mentor === false;
-          break;
-        default:
-          matchesTab = true;
-          break;
-      }
-      
-      return matchesSearch && matchesTab && matchesLanguage;
-    });
-  }, [applicants, activeTab, searchTerm, selectedLanguage]);
-
-  // Función para obtener sugerencias de búsqueda
-  const getSearchSuggestions = (term: string, limit = 5): string[] => {
-    if (!term.trim() || term.length < 2) return [];
-
-    const suggestions = new Set<string>();
-    const termLower = term.toLowerCase();
-
-    applicants.forEach(applicant => {
-      const email = applicant.email.toLowerCase();
-      const fullName = `${applicant.firstName} ${applicant.lastName}`.toLowerCase();
-      
-      // Sugerencias de email
-      if (email.includes(termLower)) {
-        suggestions.add(applicant.email);
-      }
-
-      // Sugerencias de nombre
-      if (fullName.includes(termLower)) {
-        suggestions.add(`${applicant.firstName} ${applicant.lastName}`);
-      }
-
-      // Sugerencias de dominio
-      if (termLower.includes('@')) {
-        const domain = applicant.email.split('@')[1];
-        if (domain.includes(termLower.replace('@', ''))) {
-          suggestions.add(`@${domain}`);
-        }
-      }
-    });
-
-    return Array.from(suggestions).slice(0, limit);
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setLanguageFilter('all');
+    setMentorFilter('all');
+    // No reseteamos statusFilter porque es el filtro principal de la vista
   };
 
-  // Obtener idiomas únicos disponibles
-  const availableLanguages = useMemo(() => {
-    const languages = new Set(applicants.map(applicant => applicant.language));
-    return Array.from(languages).sort();
-  }, [applicants]);
+  const hasActiveFilters = useMemo(() => {
+    return searchTerm !== '' || languageFilter !== 'all' || mentorFilter !== 'all';
+  }, [searchTerm, languageFilter, mentorFilter]);
+
+  const applyFilters = (applicants: ApplicantListItemDto[]): ApplicantListItemDto[] => {
+    const q = searchTerm.toLowerCase();
+    
+    return applicants.filter((applicant) => {
+      // Filtro de búsqueda por texto
+      const matchesSearch =
+        q === '' ||
+        applicant.firstName.toLowerCase().includes(q) ||
+        applicant.lastName.toLowerCase().includes(q) ||
+        applicant.email.toLowerCase().includes(q);
+
+      // Filtro por idioma
+      const matchesLanguage =
+        languageFilter === 'all' || applicant.language === (languageFilter as Language);
+
+      // Filtro por tipo (mentor/colaboradora)
+      const matchesMentor =
+        mentorFilter === 'all' ||
+        (mentorFilter === 'mentor' && applicant.mentor) ||
+        (mentorFilter === 'colaboradora' && !applicant.mentor);
+
+      // Filtro por estado (activo/eliminado/todos)
+      const matchesStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && !applicant.deleted) ||
+        (statusFilter === 'deleted' && applicant.deleted);
+
+      return matchesSearch && matchesLanguage && matchesMentor && matchesStatus;
+    });
+  };
 
   return {
-    activeTab,
-    setActiveTab,
-    searchTerm,
+    filters,
     setSearchTerm,
-    selectedLanguage,
-    setSelectedLanguage,
-    availableLanguages,
-    filteredApplicants,
-    getSearchSuggestions
+    setLanguageFilter,
+    setMentorFilter,
+    setStatusFilter,
+    clearAllFilters,
+    applyFilters,
+    hasActiveFilters,
   };
-};
+}
+
+// Hook adicional para obtener información de filtros aplicados
+export function useFilterSummary(filters: ApplicantFilters, filteredCount: number, totalCount: number) {
+  return useMemo(() => {
+    const activeFiltersCount = [
+      filters.searchTerm !== '',
+      filters.languageFilter !== 'all',
+      filters.mentorFilter !== 'all',
+    ].filter(Boolean).length;
+
+    const statusBadge = {
+      'active': { text: 'Activos', color: 'bg-green-100 text-green-800' },
+      'deleted': { text: 'Eliminados', color: 'bg-red-100 text-red-800' },
+      'all': { text: 'Todos', color: 'bg-gray-100 text-gray-800' },
+    }[filters.statusFilter];
+
+    return {
+      activeFiltersCount,
+      statusBadge,
+      summaryText: `Mostrando ${filteredCount} de ${totalCount} applicants`,
+      isFiltered: filteredCount !== totalCount,
+    };
+  }, [filters, filteredCount, totalCount]);
+}

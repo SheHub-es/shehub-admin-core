@@ -1,22 +1,71 @@
-// src/features/hooks/useApplicantStats.ts
 
-import type { Applicant, ApplicantStats } from '@features/types/applicant.types';
-import { useMemo } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { ApiClientError, applicantApi } from '../lib/applicants';
+import { ApplicantStatsDto } from '../types/applicant';
 
-export const useApplicantStats = (applicants: Applicant[]): ApplicantStats => {
-  return useMemo(() => {
-    const total = applicants.length;
-    const mentors = applicants.filter(a => a.mentor).length;
-    const colaboradoras = applicants.filter(a => !a.mentor).length;
-    const pending = applicants.filter(a => !a.userId).length;
-    const converted = applicants.filter(a => a.userId !== null).length;
+interface ExtendedStats extends ApplicantStatsDto {
+  byLanguage: Record<string, number>;
+  totalActive: number;
+  totalDeleted: number;
+}
 
-    return {
-      total,
-      mentors,
-      colaboradoras,
-      pending,
-      converted
-    };
-  }, [applicants]);
-};
+interface UseApplicantStatsResult {
+  stats: ExtendedStats | null;
+  loading: boolean;
+  error: string | null;
+  refresh: () => Promise<void>;
+}
+
+export function useApplicantStats(): UseApplicantStatsResult {
+  const [stats, setStats] = useState<ExtendedStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const formatErr = (err: unknown, fallback: string) =>
+    err instanceof ApiClientError
+      ? `${err.status}: ${err.message}`
+      : err instanceof Error
+      ? err.message
+      : fallback;
+
+  const refresh = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Obtener estadísticas básicas y por idioma en paralelo
+      const [basicStats, languageStats, deletedApplicants] = await Promise.all([
+        applicantApi.getStats(),
+        applicantApi.getStatsByLanguage(),
+        applicantApi.getDeleted(),
+      ]);
+
+      const totalDeleted = deletedApplicants.length;
+      const totalActive = basicStats.total;
+
+      const extendedStats: ExtendedStats = {
+        ...basicStats,
+        byLanguage: languageStats,
+        totalActive,
+        totalDeleted,
+      };
+
+      setStats(extendedStats);
+    } catch (err) {
+      setError(formatErr(err, 'Error loading stats'));
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  return {
+    stats,
+    loading,
+    error,
+    refresh,
+  };
+}

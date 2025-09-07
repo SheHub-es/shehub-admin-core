@@ -4,6 +4,7 @@ import {
   Applicant,
   ApplicantDetailDto,
   ApplicantListItemDto,
+  ApplicantStatsDto,
   CreateApplicantDto,
   EmailExistsDto,
   Language,
@@ -148,6 +149,25 @@ export const applicantApi = {
   return fetchApi('deleted');
 },
 
+// STATS - Obtener estadísticas básicas
+  getStats: async (): Promise<ApplicantStatsDto> => {
+    return fetchApi('stats');
+  },
+
+  // STATS - Obtener estadísticas por idioma
+  getStatsByLanguage: async (): Promise<Record<string, number>> => {
+    const languages = Object.values(Language);
+    const stats: Record<string, number> = {};
+    
+    await Promise.all(
+      languages.map(async (lang) => {
+        const count = await applicantApi.getCountByLanguage(lang);
+        stats[lang] = count;
+      })
+    );
+    
+    return stats;
+  },
 
   // UPDATE
   updateById: async (id: number, dto: UpdateApplicantDto): Promise<Applicant> => {
@@ -194,7 +214,6 @@ export const applicantApi = {
     return fetchApi('admin/cleanup-expired', {
       method: 'DELETE',
     });
-  },
+  }
 };
-
 

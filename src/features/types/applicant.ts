@@ -117,3 +117,11 @@ export interface ApiError {
   status: number;
   timestamp: string;
 }
+
+export interface ApplicantExtendedStatsDto extends ApplicantStatsDto {
+  byLanguage: Record<string, number>;
+  totalActive: number;
+  totalDeleted: number;
+  avgRolesPerApplicant: number;
+  topRoles: Array<{ role: string; count: number }>;
+}
