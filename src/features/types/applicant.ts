@@ -1,28 +1,28 @@
 // types/applicant.ts
 
 export enum Language {
-  ES = 'ES',
-  EN = 'EN',
-  CAT = 'CAT',
-  EN_GB = 'EN_GB',
-  EN_US = 'EN_US'
+  ES = "ES",
+  EN = "EN",
+  CAT = "CAT",
+  EN_GB = "EN_GB",
+  EN_US = "EN_US",
 }
 
 // Helper function to get display names
 export const getLanguageDisplayName = (language: Language): string => {
   switch (language) {
     case Language.ES:
-      return 'Español';
+      return "Español";
     case Language.EN:
-      return 'English';
+      return "English";
     case Language.CAT:
-      return 'Catalán';
+      return "Catalán";
     case Language.EN_GB:
-      return 'English (UK)';
+      return "English (UK)";
     case Language.EN_US:
-      return 'English (US)';
+      return "English (US)";
     default:
-      return 'Español';
+      return "Español";
   }
 };
 
@@ -39,8 +39,8 @@ export interface Applicant {
   deletedAt?: string | null;
   userId?: number | null;
   deleted?: boolean;
-  displayRole?: string; 
-  registeredUser?: boolean; 
+  displayRole?: string;
+  registeredUser?: boolean;
 }
 
 export interface CreateApplicantDto {
@@ -48,7 +48,7 @@ export interface CreateApplicantDto {
   firstName: string;
   lastName: string;
   mentor: boolean;
-  language?: string; 
+  language?: string;
   roles: string[];
 }
 
@@ -71,7 +71,7 @@ export interface ApplicantListItemDto {
   displayRole?: string;
   deleted?: boolean;
   deletedAt?: string | null;
-  timestamp?: string; 
+  timestamp?: string;
 }
 
 export interface ApplicantDetailDto {

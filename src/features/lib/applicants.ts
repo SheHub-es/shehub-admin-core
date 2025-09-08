@@ -10,59 +10,69 @@ import {
   Language,
   PaginatedResponse,
   UpdateApplicantDto,
-} from '../types/applicant';
+} from "../types/applicant";
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || '').replace(/\/+$/, '');
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(
+  /\/+$/,
+  ""
+);
 
-// Clase de error del cliente, para no chocar con tu interface ApiError
 export class ApiClientError extends Error {
   status: number;
   detail?: unknown;
 
   constructor(status: number, message: string, detail?: unknown) {
     super(message);
-    this.name = 'ApiClientError';
+    this.name = "ApiClientError";
     this.status = status;
     this.detail = detail;
   }
 }
 
 function buildUrl(endpoint: string) {
-  const clean = endpoint.replace(/^\/+/, ''); // quita "/" al inicio
-  const path = clean ? `/${clean}` : '';
+  const clean = endpoint.replace(/^\/+/, "");
+  const path = clean ? `/${clean}` : "";
   // Si hay base -> absoluto contra backend; si no -> relativo (rewrites)
   return API_BASE_URL
     ? `${API_BASE_URL}/api/applicants${path}`
     : `/api/applicants${path}`;
 }
 
-async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function fetchApi<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
   const url = buildUrl(endpoint);
 
   const response = await fetch(url, {
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...(options.headers || {}),
     },
     ...options,
   });
 
   // Intenta parsear el cuerpo (texto o JSON)
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json');
+  const contentType = response.headers.get("content-type") || "";
+  const isJson = contentType.includes("application/json");
 
   if (!response.ok) {
-  let payload: unknown = null;
+    let payload: unknown = null;
     try {
       payload = isJson ? await response.json() : await response.text();
     } catch {
-      // ignora errores de parseo
+      // Ignorar errores de parseo
     }
 
-    let message: string = 'Network error';
-    if (payload && typeof payload === 'object' && 'message' in payload && typeof (payload as { message?: unknown }).message === 'string') {
+    let message: string = "Network error";
+    if (
+      payload &&
+      typeof payload === "object" &&
+      "message" in payload &&
+      typeof (payload as { message?: unknown }).message === "string"
+    ) {
       message = (payload as { message: string }).message;
-    } else if (typeof payload === 'string') {
+    } else if (typeof payload === "string") {
       message = payload;
     }
 
@@ -85,18 +95,21 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
 export const applicantApi = {
   // CREATE
   create: async (dto: CreateApplicantDto): Promise<Applicant> => {
-    return fetchApi('', {
-      method: 'POST',
+    return fetchApi("", {
+      method: "POST",
       body: JSON.stringify(dto),
     });
   },
 
   // READ
   getAll: async (): Promise<ApplicantListItemDto[]> => {
-    return fetchApi('');
+    return fetchApi("");
   },
 
-  getPaginated: async (page = 0, size = 10): Promise<PaginatedResponse<Applicant>> => {
+  getPaginated: async (
+    page = 0,
+    size = 10
+  ): Promise<PaginatedResponse<Applicant>> => {
     return fetchApi(`paginated?page=${page}&size=${size}`);
   },
 
@@ -117,11 +130,11 @@ export const applicantApi = {
   },
 
   getPending: async (): Promise<Applicant[]> => {
-    return fetchApi('pending');
+    return fetchApi("pending");
   },
 
   getAvailableRoles: async (): Promise<string[]> => {
-    return fetchApi('roles/available');
+    return fetchApi("roles/available");
   },
 
   checkEmailExists: async (email: string): Promise<EmailExistsDto> => {
@@ -129,7 +142,7 @@ export const applicantApi = {
   },
 
   getCount: async (): Promise<number> => {
-    return fetchApi('count');
+    return fetchApi("count");
   },
 
   getCountByLanguage: async (language: Language | string): Promise<number> => {
@@ -142,78 +155,83 @@ export const applicantApi = {
 
   // Este endpoint existe en ApplicantController (no es el /admin con BasicAuth)
   getExpiredDeleted: async (): Promise<Applicant[]> => {
-    return fetchApi('admin/expired-deleted');
+    return fetchApi("admin/expired-deleted");
   },
 
   getDeleted: async (): Promise<ApplicantListItemDto[]> => {
-  return fetchApi('deleted');
-},
+    return fetchApi("deleted");
+  },
 
-// STATS - Obtener estadísticas básicas
+  // STATS - Obtener estadísticas básicas
   getStats: async (): Promise<ApplicantStatsDto> => {
-    return fetchApi('stats');
+    return fetchApi("stats");
   },
 
   // STATS - Obtener estadísticas por idioma
   getStatsByLanguage: async (): Promise<Record<string, number>> => {
     const languages = Object.values(Language);
     const stats: Record<string, number> = {};
-    
+
     await Promise.all(
       languages.map(async (lang) => {
         const count = await applicantApi.getCountByLanguage(lang);
         stats[lang] = count;
       })
     );
-    
+
     return stats;
   },
 
   // UPDATE
-  updateById: async (id: number, dto: UpdateApplicantDto): Promise<Applicant> => {
+  updateById: async (
+    id: number,
+    dto: UpdateApplicantDto
+  ): Promise<Applicant> => {
     return fetchApi(`${id}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(dto),
     });
   },
 
-  updateByEmail: async (email: string, dto: UpdateApplicantDto): Promise<Applicant> => {
+  updateByEmail: async (
+    email: string,
+    dto: UpdateApplicantDto
+  ): Promise<Applicant> => {
     return fetchApi(`email/${encodeURIComponent(email)}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify(dto),
     });
   },
 
   restore: async (email: string): Promise<Applicant> => {
     return fetchApi(`restore/email/${encodeURIComponent(email)}`, {
-      method: 'PUT',
+      method: "PUT",
     });
   },
 
   convertToUser: async (id: number, userId: number): Promise<Applicant> => {
     return fetchApi(`${id}/convert-to-user?userId=${userId}`, {
-      method: 'PUT',
+      method: "PUT",
     });
   },
 
   // DELETE
   deleteByEmail: async (email: string): Promise<void> => {
     return fetchApi(`email/${encodeURIComponent(email)}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   },
 
   deleteById: async (id: number): Promise<void> => {
     return fetchApi(`${id}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
   },
 
   cleanupExpired: async (): Promise<number> => {
     // Este endpoint también está en ApplicantController como /api/applicants/admin/cleanup-expired
-    return fetchApi('admin/cleanup-expired', {
-      method: 'DELETE',
+    return fetchApi("admin/cleanup-expired", {
+      method: "DELETE",
     });
-  }
+  },
 };
-

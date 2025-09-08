@@ -1,16 +1,16 @@
-import React from 'react';
-import { Search } from 'lucide-react';
-import { Language, getLanguageDisplayName } from '../features/types/applicant';
+import React from "react";
+import { Search } from "lucide-react";
+import { Language, getLanguageDisplayName } from "../features/types/applicant";
 
 interface SearchAndFiltersProps {
   searchTerm: string;
   onSearchChange: (term: string) => void;
-  languageFilter: Language | 'all';
-  onLanguageFilterChange: (filter: Language | 'all') => void;
-  mentorFilter: 'all' | 'mentor' | 'colaboradora';
-  onMentorFilterChange: (filter: 'all' | 'mentor' | 'colaboradora') => void;
-  statusFilter: 'all' | 'active' | 'deleted';
-  onStatusFilterChange: (filter: 'all' | 'active' | 'deleted') => void;
+  languageFilter: Language | "all";
+  onLanguageFilterChange: (filter: Language | "all") => void;
+  mentorFilter: "all" | "mentor" | "colaboradora";
+  onMentorFilterChange: (filter: "all" | "mentor" | "colaboradora") => void;
+  statusFilter: "all" | "active" | "deleted";
+  onStatusFilterChange: (filter: "all" | "active" | "deleted") => void;
   filteredCount: number;
   totalCount: number;
 }
@@ -41,7 +41,10 @@ export function SearchAndFilters({
         <div className="flex flex-col lg:flex-row gap-4">
           {/* Barra de búsqueda */}
           <div className="flex-1">
-            <label htmlFor="search" className="block text-[var(--text-size-200)] font-medium text-[var(--color-card-white-description)] mb-2">
+            <label
+              htmlFor="search"
+              className="block text-[var(--text-size-200)] font-medium text-[var(--color-card-white-description)] mb-2"
+            >
               Búsqueda general
             </label>
             <div className="relative group">
@@ -66,13 +69,18 @@ export function SearchAndFilters({
           <div className="flex flex-col sm:flex-row gap-4">
             {/* Filtro por idioma */}
             <div className="min-w-[160px]">
-              <label htmlFor="languageFilter" className="block text-[var(--text-size-200)] font-medium text-[var(--color-card-white-description)] mb-2">
+              <label
+                htmlFor="languageFilter"
+                className="block text-[var(--text-size-200)] font-medium text-[var(--color-card-white-description)] mb-2"
+              >
                 Idioma
               </label>
               <select
                 id="languageFilter"
                 value={languageFilter}
-                onChange={(e) => onLanguageFilterChange(e.target.value as Language | 'all')}
+                onChange={(e) =>
+                  onLanguageFilterChange(e.target.value as Language | "all")
+                }
                 className="w-full px-3 py-3 border border-neutral-300 rounded-lg 
                          text-[var(--text-size-300)] text-[var(--color-foreground)]
                          bg-white cursor-pointer
@@ -80,23 +88,40 @@ export function SearchAndFilters({
                          hover:border-[var(--color-primary)] transition-all duration-200"
               >
                 <option value="all">Todos los idiomas</option>
-                <option value={Language.ES}>{getLanguageDisplayName(Language.ES)}</option>
-                <option value={Language.EN}>{getLanguageDisplayName(Language.EN)}</option>
-                <option value={Language.CAT}>{getLanguageDisplayName(Language.CAT)}</option>
-                <option value={Language.EN_GB}>{getLanguageDisplayName(Language.EN_GB)}</option>
-                <option value={Language.EN_US}>{getLanguageDisplayName(Language.EN_US)}</option>
+                <option value={Language.ES}>
+                  {getLanguageDisplayName(Language.ES)}
+                </option>
+                <option value={Language.EN}>
+                  {getLanguageDisplayName(Language.EN)}
+                </option>
+                <option value={Language.CAT}>
+                  {getLanguageDisplayName(Language.CAT)}
+                </option>
+                <option value={Language.EN_GB}>
+                  {getLanguageDisplayName(Language.EN_GB)}
+                </option>
+                <option value={Language.EN_US}>
+                  {getLanguageDisplayName(Language.EN_US)}
+                </option>
               </select>
             </div>
 
             {/* Filtro por tipo (mentor/colaboradora) */}
             <div className="min-w-[160px]">
-              <label htmlFor="mentorFilter" className="block text-[var(--text-size-200)] font-medium text-[var(--color-card-white-description)] mb-2">
+              <label
+                htmlFor="mentorFilter"
+                className="block text-[var(--text-size-200)] font-medium text-[var(--color-card-white-description)] mb-2"
+              >
                 Tipo
               </label>
               <select
                 id="mentorFilter"
                 value={mentorFilter}
-                onChange={(e) => onMentorFilterChange(e.target.value as 'all' | 'mentor' | 'colaboradora')}
+                onChange={(e) =>
+                  onMentorFilterChange(
+                    e.target.value as "all" | "mentor" | "colaboradora"
+                  )
+                }
                 className="w-full px-3 py-3 border border-neutral-300 rounded-lg 
                          text-[var(--text-size-300)] text-[var(--color-foreground)]
                          bg-white cursor-pointer
@@ -111,13 +136,20 @@ export function SearchAndFilters({
 
             {/* Filtro por estado */}
             <div className="min-w-[140px]">
-              <label htmlFor="statusFilter" className="block text-[var(--text-size-200)] font-medium text-[var(--color-card-white-description)] mb-2">
+              <label
+                htmlFor="statusFilter"
+                className="block text-[var(--text-size-200)] font-medium text-[var(--color-card-white-description)] mb-2"
+              >
                 Estado
               </label>
               <select
                 id="statusFilter"
                 value={statusFilter}
-                onChange={(e) => onStatusFilterChange(e.target.value as 'all' | 'active' | 'deleted')}
+                onChange={(e) =>
+                  onStatusFilterChange(
+                    e.target.value as "all" | "active" | "deleted"
+                  )
+                }
                 className="w-full px-3 py-3 border border-neutral-300 rounded-lg 
                          text-[var(--text-size-300)] text-[var(--color-foreground)]
                          bg-white cursor-pointer
@@ -138,25 +170,31 @@ export function SearchAndFilters({
             <span className="text-[var(--text-size-300)] text-[var(--color-foreground)] font-medium">
               Mostrando {filteredCount} de {totalCount} applicants
             </span>
-            
+
             {/* Badge de estado activo */}
-            {statusFilter === 'deleted' && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-[var(--text-size-100)] font-medium 
-                             bg-red-50 text-red-700 border border-red-200">
+            {statusFilter === "deleted" && (
+              <span
+                className="inline-flex items-center px-3 py-1 rounded-full text-[var(--text-size-100)] font-medium 
+                             bg-red-50 text-red-700 border border-red-200"
+              >
                 <span className="w-1.5 h-1.5 bg-red-500 rounded-full mr-2"></span>
                 Eliminados
               </span>
             )}
-            {statusFilter === 'active' && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-[var(--text-size-100)] font-medium 
-                             bg-green-50 text-green-700 border border-green-200">
+            {statusFilter === "active" && (
+              <span
+                className="inline-flex items-center px-3 py-1 rounded-full text-[var(--text-size-100)] font-medium 
+                             bg-green-50 text-green-700 border border-green-200"
+              >
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full mr-2"></span>
                 Activos
               </span>
             )}
-            {statusFilter === 'all' && (
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-[var(--text-size-100)] font-medium 
-                             bg-neutral-50 text-neutral-700 border border-neutral-200">
+            {statusFilter === "all" && (
+              <span
+                className="inline-flex items-center px-3 py-1 rounded-full text-[var(--text-size-100)] font-medium 
+                             bg-neutral-50 text-neutral-700 border border-neutral-200"
+              >
                 <span className="w-1.5 h-1.5 bg-neutral-500 rounded-full mr-2"></span>
                 Todos
               </span>
@@ -164,21 +202,25 @@ export function SearchAndFilters({
           </div>
 
           {/* Indicador visual de filtros activos */}
-          {(searchTerm || languageFilter !== 'all' || mentorFilter !== 'all') && (
+          {(searchTerm ||
+            languageFilter !== "all" ||
+            mentorFilter !== "all") && (
             <div className="flex items-center gap-2">
-              <span className="text-[var(--text-size-200)] text-[var(--color-muted)]">Filtros aplicados:</span>
+              <span className="text-[var(--text-size-200)] text-[var(--color-muted)]">
+                Filtros aplicados:
+              </span>
               <div className="flex gap-1">
                 {searchTerm && (
                   <span className="px-2 py-1 bg-[var(--color-primary-hover)] text-[var(--color-primary)] rounded text-[var(--text-size-100)] font-medium">
                     Búsqueda
                   </span>
                 )}
-                {languageFilter !== 'all' && (
+                {languageFilter !== "all" && (
                   <span className="px-2 py-1 bg-[var(--color-primary-hover)] text-[var(--color-primary)] rounded text-[var(--text-size-100)] font-medium">
                     Idioma
                   </span>
                 )}
-                {mentorFilter !== 'all' && (
+                {mentorFilter !== "all" && (
                   <span className="px-2 py-1 bg-[var(--color-secondary-hover)] text-[var(--color-secondary)] rounded text-[var(--text-size-100)] font-medium">
                     Tipo
                   </span>

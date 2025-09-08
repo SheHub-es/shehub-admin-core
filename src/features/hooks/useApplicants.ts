@@ -1,6 +1,6 @@
 // features/hooks/useApplicants.ts
 import { useCallback, useEffect, useState } from 'react';
-import { ApiClientError, applicantApi } from '../lib/applicants'; // ✅ ruta correcta
+import { ApiClientError, applicantApi } from '../lib/applicants'; 
 import {
   Applicant,
   ApplicantDetailDto,
@@ -48,7 +48,6 @@ export function useApplicants(): UseApplicantsResult {
       } else if (statusFilter === 'deleted') {
         data = await applicantApi.getExpiredDeleted();
       } else if (statusFilter === 'all') {
-        // Si tienes endpoint para todos, úsalo aquí. Si no, une ambos resultados:
         const [active, deleted] = await Promise.all([
           applicantApi.getAll(),
           applicantApi.getExpiredDeleted(),
@@ -140,7 +139,7 @@ export function useApplicants(): UseApplicantsResult {
   const restoreByEmail = useCallback(
     async (email: string): Promise<Applicant> => {
       try {
-        const restored = await applicantApi.restore(email); // usa tu restore por email
+        const restored = await applicantApi.restore(email); 
         await refresh();
         return restored;
       } catch (err) {

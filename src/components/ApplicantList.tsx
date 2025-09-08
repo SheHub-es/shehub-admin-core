@@ -1,19 +1,20 @@
 // components/applicants/ApplicantList.tsx
-
-// Helper para parsear timestamp del backend ("yyyy-MM-dd HH:mm:ss" -> Date)
-// const parseApiTimestamp = (ts?: string) => {
-//   if (!ts) return null;
-//   const isoish = ts.replace(' ', 'T');
-//   const d = new Date(isoish);
-//   return isNaN(d.getTime()) ? null : d;
-// };
-
-import { AlertCircle, Pencil, RotateCcw, Trash2, User, Users, Eye, Calendar, Mail } from 'lucide-react';
+import {
+  AlertCircle,
+  Pencil,
+  RotateCcw,
+  Trash2,
+  User,
+  Users,
+  Eye,
+  Calendar,
+  Mail,
+} from "lucide-react";
 import {
   ApplicantListItemDto,
   Language,
   getLanguageDisplayName,
-} from '../features/types/applicant';
+} from "../features/types/applicant";
 
 interface ApplicantListProps {
   applicants: ApplicantListItemDto[];
@@ -21,10 +22,6 @@ interface ApplicantListProps {
   onDelete: (applicant: ApplicantListItemDto) => void;
   onView?: (applicant: ApplicantListItemDto) => void;
   onRestore?: (applicant: ApplicantListItemDto) => void;
-  /**
-   * Mensaje a mostrar si la lista llega vacía.
-   * Si no se pasa, se usa el texto por defecto.
-   */
   emptyLabel?: string;
 }
 
@@ -39,26 +36,41 @@ const languageLabels: Record<Language, string> = {
 
 // Función para obtener las iniciales del nombre
 const getInitials = (firstName: string, lastName: string): string => {
-  const firstInitial = firstName?.charAt(0)?.toUpperCase() || '';
-  const lastInitial = lastName?.charAt(0)?.toUpperCase() || '';
+  const firstInitial = firstName?.charAt(0)?.toUpperCase() || "";
+  const lastInitial = lastName?.charAt(0)?.toUpperCase() || "";
   return `${firstInitial}${lastInitial}`;
 };
 
 // Función para obtener colores del avatar basado en el nombre
 const getAvatarColors = (name: string) => {
   const colors = [
-    { bg: 'bg-purple-100', text: 'text-purple-700', border: 'border-purple-200' },
-    { bg: 'bg-pink-100', text: 'text-pink-700', border: 'border-pink-200' },
-    { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200' },
-    { bg: 'bg-green-100', text: 'text-green-700', border: 'border-green-200' },
-    { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200' },
+    {
+      bg: "bg-purple-100",
+      text: "text-purple-700",
+      border: "border-purple-200",
+    },
+    { bg: "bg-pink-100", text: "text-pink-700", border: "border-pink-200" },
+    {
+      bg: "bg-orange-100",
+      text: "text-orange-700",
+      border: "border-orange-200",
+    },
+    { bg: "bg-green-100", text: "text-green-700", border: "border-green-200" },
+    { bg: "bg-blue-100", text: "text-blue-700", border: "border-blue-200" },
   ];
-  
+
   const index = name.length % colors.length;
   return colors[index];
 };
 
-export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore, emptyLabel }: ApplicantListProps) {
+export function ApplicantList({
+  applicants,
+  onEdit,
+  onDelete,
+  onView,
+  onRestore,
+  emptyLabel,
+}: ApplicantListProps) {
   if (applicants.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-lg p-12 text-center fade-in">
@@ -69,7 +81,7 @@ export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore,
           No hay applicants
         </h3>
         <p className="text-neutral-600">
-          {emptyLabel ?? 'No hay applicants registrados en este momento'}
+          {emptyLabel ?? "No hay applicants registrados en este momento"}
         </p>
       </div>
     );
@@ -111,35 +123,47 @@ export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore,
           <tbody className="bg-white divide-y divide-neutral-100">
             {applicants.map((applicant, index) => {
               const langKey = applicant.language as Language;
-              const langLabel = languageLabels[langKey] ?? String(applicant.language);
+              const langLabel =
+                languageLabels[langKey] ?? String(applicant.language);
               const fullName = `${applicant.firstName} ${applicant.lastName}`;
               const avatarColors = getAvatarColors(fullName);
-              const initials = getInitials(applicant.firstName, applicant.lastName);
+              const initials = getInitials(
+                applicant.firstName,
+                applicant.lastName
+              );
 
               return (
-                <tr 
-                  key={applicant.id} 
+                <tr
+                  key={applicant.id}
                   className={`hover:bg-neutral-50 transition-colors duration-200 ${
-                    applicant.deleted ? 'opacity-75 bg-red-50' : ''
+                    applicant.deleted ? "opacity-75 bg-red-50" : ""
                   } fade-in`}
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-12 w-12">
-                        <div className={`h-12 w-12 rounded-full ${avatarColors.bg} ${avatarColors.border} border-2 flex items-center justify-center transition-transform duration-200 hover:scale-105 ${
-                          applicant.deleted ? 'grayscale' : ''
-                        }`}>
-                          <span className={`text-sm font-bold ${avatarColors.text}`}>
+                        <div
+                          className={`h-12 w-12 rounded-full ${avatarColors.bg} ${avatarColors.border} border-2 flex items-center justify-center transition-transform duration-200 hover:scale-105 ${
+                            applicant.deleted ? "grayscale" : ""
+                          }`}
+                        >
+                          <span
+                            className={`text-sm font-bold ${avatarColors.text}`}
+                          >
                             {initials}
                           </span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <div className="flex items-center gap-2 mb-1">
-                          <div className={`text-sm font-semibold ${
-                            applicant.deleted ? 'text-neutral-500 line-through' : 'text-neutral-900'
-                          }`}>
+                          <div
+                            className={`text-sm font-semibold ${
+                              applicant.deleted
+                                ? "text-neutral-500 line-through"
+                                : "text-neutral-900"
+                            }`}
+                          >
                             {applicant.firstName} {applicant.lastName}
                           </div>
                           {applicant.deleted && (
@@ -160,7 +184,9 @@ export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore,
                     <div className="space-y-1">
                       <div
                         className={`max-w-[280px] truncate font-medium ${
-                          applicant.deleted ? 'line-through text-neutral-400' : 'text-neutral-900'
+                          applicant.deleted
+                            ? "line-through text-neutral-400"
+                            : "text-neutral-900"
                         }`}
                         title={applicant.email}
                       >
@@ -169,7 +195,10 @@ export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore,
                       {applicant.deletedAt && (
                         <div className="flex items-center gap-1 text-xs text-red-500">
                           <Calendar className="h-3 w-3" />
-                          Eliminado: {new Date(applicant.deletedAt).toLocaleString('es-ES')}
+                          Eliminado:{" "}
+                          {new Date(applicant.deletedAt).toLocaleString(
+                            "es-ES"
+                          )}
                         </div>
                       )}
                     </div>
@@ -184,9 +213,9 @@ export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore,
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
                       className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border ${
-                        applicant.mentor 
-                          ? 'bg-green-100 text-green-800 border-green-200' 
-                          : 'bg-purple-100 text-purple-800 border-purple-200'
+                        applicant.mentor
+                          ? "bg-green-100 text-green-800 border-green-200"
+                          : "bg-purple-100 text-purple-800 border-purple-200"
                       }`}
                     >
                       {applicant.mentor ? (
@@ -206,19 +235,23 @@ export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore,
                   <td className="px-6 py-4 text-sm">
                     <div className="max-w-[240px]">
                       {applicant.roles.length === 0 ? (
-                        <span className="text-neutral-400 italic text-xs">Sin roles definidos</span>
+                        <span className="text-neutral-400 italic text-xs">
+                          Sin roles definidos
+                        </span>
                       ) : (
                         <div className="flex items-center gap-2">
                           <span
                             className="inline-flex items-center px-2 py-1 text-xs rounded-md bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium"
                             title={applicant.roles[0]}
                           >
-                            {applicant.roles[0].length > 24 ? `${applicant.roles[0].substring(0, 24)}...` : applicant.roles[0]}
+                            {applicant.roles[0].length > 24
+                              ? `${applicant.roles[0].substring(0, 24)}...`
+                              : applicant.roles[0]}
                           </span>
                           {applicant.roles.length > 1 && (
-                            <span 
+                            <span
                               className="inline-flex items-center px-2 py-1 text-xs rounded-md bg-neutral-100 text-neutral-600 border border-neutral-200 font-medium cursor-help"
-                              title={`Roles adicionales: ${applicant.roles.slice(1).join(', ')}`}
+                              title={`Roles adicionales: ${applicant.roles.slice(1).join(", ")}`}
                             >
                               +{applicant.roles.length - 1}
                             </span>
@@ -284,12 +317,13 @@ export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore,
           </tbody>
         </table>
       </div>
-      
+
       {/* Footer informativo */}
       <div className="bg-neutral-50 px-6 py-3 border-t border-neutral-200">
         <div className="flex items-center justify-between text-sm text-neutral-600">
           <span>
-            Mostrando {applicants.length} applicant{applicants.length !== 1 ? 's' : ''}
+            Mostrando {applicants.length} applicant
+            {applicants.length !== 1 ? "s" : ""}
           </span>
           <div className="flex items-center gap-4 text-xs">
             <div className="flex items-center gap-1">
@@ -300,7 +334,7 @@ export function ApplicantList({ applicants, onEdit, onDelete, onView, onRestore,
               <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
               <span>Colaboradora</span>
             </div>
-            {applicants.some(a => a.deleted) && (
+            {applicants.some((a) => a.deleted) && (
               <div className="flex items-center gap-1">
                 <AlertCircle className="w-3 h-3 text-red-500" />
                 <span>Eliminado</span>

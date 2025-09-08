@@ -74,10 +74,22 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
       <div className="hidden lg:flex lg:w-1/2 bg-[image:var(--color-gradient-brand)] p-12 flex-col justify-between relative overflow-hidden">
         {/* Patrón de fondo decorativo mejorado */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-20 left-20 w-64 h-64 rounded-full border border-white/30 animate-pulse" style={{ animationDelay: '0s', animationDuration: '4s' }} />
-          <div className="absolute bottom-20 right-20 w-48 h-48 rounded-full border border-white/20 animate-pulse" style={{ animationDelay: '1s', animationDuration: '4s' }} />
-          <div className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full border border-white/25 animate-pulse" style={{ animationDelay: '2s', animationDuration: '4s' }} />
-          <div className="absolute top-1/3 right-1/4 w-20 h-20 rounded-full border border-white/15 animate-pulse" style={{ animationDelay: '3s', animationDuration: '4s' }} />
+          <div
+            className="absolute top-20 left-20 w-64 h-64 rounded-full border border-white/30 animate-pulse"
+            style={{ animationDelay: "0s", animationDuration: "4s" }}
+          />
+          <div
+            className="absolute bottom-20 right-20 w-48 h-48 rounded-full border border-white/20 animate-pulse"
+            style={{ animationDelay: "1s", animationDuration: "4s" }}
+          />
+          <div
+            className="absolute top-1/2 left-1/3 w-32 h-32 rounded-full border border-white/25 animate-pulse"
+            style={{ animationDelay: "2s", animationDuration: "4s" }}
+          />
+          <div
+            className="absolute top-1/3 right-1/4 w-20 h-20 rounded-full border border-white/15 animate-pulse"
+            style={{ animationDelay: "3s", animationDuration: "4s" }}
+          />
         </div>
 
         <div className="relative z-10 fade-in">
@@ -102,7 +114,7 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
 
             <p className="text-purple-100 text-[var(--text-size-400)] leading-[var(--spacing-line-height-body-1)] fade-in delay-400">
               Desde aquí coordinas una comunidad que transforma carreras,
-              impulsa negocios y conecta mujeres con oportunidades reales. 
+              impulsa negocios y conecta mujeres con oportunidades reales.
               <strong className="text-white">Tu impacto empieza aquí.</strong>
             </p>
 
@@ -110,15 +122,21 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
             <div className="space-y-3 fade-in delay-600">
               <div className="flex items-center gap-3 text-white/90">
                 <CheckCircle className="w-5 h-5 text-green-300" />
-                <span className="text-[var(--text-size-300)]">Gestión centralizada de aplicaciones</span>
+                <span className="text-[var(--text-size-300)]">
+                  Gestión centralizada de aplicaciones
+                </span>
               </div>
               <div className="flex items-center gap-3 text-white/90">
                 <CheckCircle className="w-5 h-5 text-green-300" />
-                <span className="text-[var(--text-size-300)]">Analytics y reportes en tiempo real</span>
+                <span className="text-[var(--text-size-300)]">
+                  Analytics y reportes en tiempo real
+                </span>
               </div>
               <div className="flex items-center gap-3 text-white/90">
                 <CheckCircle className="w-5 h-5 text-green-300" />
-                <span className="text-[var(--text-size-300)]">Panel de control completo</span>
+                <span className="text-[var(--text-size-300)]">
+                  Panel de control completo
+                </span>
               </div>
             </div>
           </div>
@@ -182,11 +200,13 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className={`h-5 w-5 transition-colors duration-200 ${
-                    errors.email 
-                      ? 'text-[var(--color-error)]' 
-                      : 'text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)]'
-                  }`} />
+                  <Mail
+                    className={`h-5 w-5 transition-colors duration-200 ${
+                      errors.email
+                        ? "text-[var(--color-error)]"
+                        : "text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)]"
+                    }`}
+                  />
                 </div>
                 <input
                   id="email"
@@ -198,9 +218,10 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
                   className={`block w-full pl-10 pr-3 py-3 border rounded-lg transition-all duration-200 
                     text-[var(--text-size-300)] placeholder:text-[var(--color-muted)]
                     focus:outline-none focus:ring-2 focus:border-transparent
-                    ${errors.email
-                      ? "border-[var(--color-error)] bg-red-50 focus:ring-red-200"
-                      : "border-neutral-300 bg-white hover:border-[var(--color-primary)] focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+                    ${
+                      errors.email
+                        ? "border-[var(--color-error)] bg-red-50 focus:ring-red-200"
+                        : "border-neutral-300 bg-white hover:border-[var(--color-primary)] focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
                     }`}
                   placeholder="tu@email.com"
                 />
@@ -223,11 +244,13 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
               </label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className={`h-5 w-5 transition-colors duration-200 ${
-                    errors.password 
-                      ? 'text-[var(--color-error)]' 
-                      : 'text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)]'
-                  }`} />
+                  <Lock
+                    className={`h-5 w-5 transition-colors duration-200 ${
+                      errors.password
+                        ? "text-[var(--color-error)]"
+                        : "text-[var(--color-muted)] group-focus-within:text-[var(--color-primary)]"
+                    }`}
+                  />
                 </div>
                 <input
                   id="password"
@@ -239,9 +262,10 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
                   className={`block w-full pl-10 pr-12 py-3 border rounded-lg transition-all duration-200 
                     text-[var(--text-size-300)] placeholder:text-[var(--color-muted)]
                     focus:outline-none focus:ring-2 focus:border-transparent
-                    ${errors.password
-                      ? "border-[var(--color-error)] bg-red-50 focus:ring-red-200"
-                      : "border-neutral-300 bg-white hover:border-[var(--color-primary)] focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
+                    ${
+                      errors.password
+                        ? "border-[var(--color-error)] bg-red-50 focus:ring-red-200"
+                        : "border-neutral-300 bg-white hover:border-[var(--color-primary)] focus:ring-[var(--color-primary)]/20 focus:border-[var(--color-primary)]"
                     }`}
                   placeholder="••••••••"
                 />
@@ -294,9 +318,10 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
               type="submit"
               disabled={isLoading}
               className={`w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg font-medium transition-all duration-200 text-[var(--text-size-300)]
-                ${isLoading
-                  ? "bg-[var(--color-button-disabled-bg)] text-[var(--color-button-disabled-text)] cursor-not-allowed"
-                  : "bg-[var(--color-button-primary-primary-bg-default)] text-[var(--color-button-primary-primary-text)] hover:bg-[var(--color-button-primary-primary-bg-hover)] hover:text-[var(--color-button-primary-primary-text-hover)] hover:shadow-[var(--color-card-shadow-hover)] transform hover:scale-[1.02]"
+                ${
+                  isLoading
+                    ? "bg-[var(--color-button-disabled-bg)] text-[var(--color-button-disabled-text)] cursor-not-allowed"
+                    : "bg-[var(--color-button-primary-primary-bg-default)] text-[var(--color-button-primary-primary-text)] hover:bg-[var(--color-button-primary-primary-bg-hover)] hover:text-[var(--color-button-primary-primary-text-hover)] hover:shadow-[var(--color-card-shadow-hover)] transform hover:scale-[1.02]"
                 }`}
             >
               {isLoading ? (
