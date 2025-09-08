@@ -1,12 +1,13 @@
 'use client';
 
-import { Download, Plus, RefreshCw, Users, Bell, FileText, LogOut, ChevronLeft, ChevronRight, User, BarChart3 } from 'lucide-react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { BarChart3, Bell, ChevronLeft, ChevronRight, Download, FileText, LogOut, Plus, RefreshCw, User, Users, X } from 'lucide-react';
 import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ApplicantForm } from '../../components/ApplicantForm';
 import { ApplicantList } from '../../components/ApplicantList';
 import { ApplicantStats, type ApplicantStatsRef } from '../../components/ApplicantStats';
+import { Greeting } from '../../components/Greeting';
 import { SearchAndFilters } from '../../components/SearchAndFilters';
 import { useApplicantFilters } from '../../features/hooks/useApplicantFilter';
 import { useApplicants } from '../../features/hooks/useApplicants';
@@ -61,28 +62,28 @@ function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" aria-modal="true" role="dialog">
+    <div className="fixed inset-0 z-50 overflow-y-auto fade-in" aria-modal="true" role="dialog">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <div
-          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 z-40"
+          className="fixed inset-0 transition-opacity bg-neutral-900/50 backdrop-blur-sm z-40"
           onClick={onClose}
           aria-hidden="true"
         />
         <div
-          className={`inline-block w-full ${sizeClasses[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg relative z-50`}
+          className={`inline-block w-full ${sizeClasses[size]} p-0 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-xl relative z-50`}
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium leading-6 text-gray-900">{title}</h3>
+          <div className="flex items-center justify-between p-6 border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-purple-50">
+            <h3 className="text-lg font-bold text-neutral-900">{title}</h3>
             <button
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 focus:outline-none"
+              className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-all duration-200"
               type="button"
               aria-label="Cerrar"
             >
-              <span className="text-2xl">&times;</span>
+              <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="mt-2">{children}</div>
+          <div className="p-6">{children}</div>
         </div>
       </div>
     </div>
@@ -106,13 +107,13 @@ function ConfirmModal({
 }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600">{message}</p>
-        <div className="flex justify-end space-x-3">
+      <div className="space-y-6">
+        <p className="text-neutral-700 leading-relaxed">{message}</p>
+        <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
+            className="px-4 py-2 text-neutral-700 bg-neutral-100 border border-neutral-300 rounded-lg hover:bg-neutral-200 hover:text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
           >
             Cancelar
@@ -120,10 +121,17 @@ function ConfirmModal({
           <button
             onClick={onConfirm}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             type="button"
           >
-            {isLoading ? 'Procesando...' : 'Eliminar'}
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                Procesando...
+              </>
+            ) : (
+              'Eliminar'
+            )}
           </button>
         </div>
       </div>
@@ -180,15 +188,21 @@ export default function Page() {
   }, []);
 
   const menuItems = [
-    { icon: Users, label: 'Applicants', href: '/applicants', badge: 0 },
-    { icon: BarChart3, label: 'Dashboard', href: '/dashboard', badge: 0 },
+    { icon: Users, label: 'Applicants', href: '/applicants' },
+    { icon: BarChart3, label: 'Dashboard', href: '/dashboard' },
     { icon: Bell, label: 'Notificaciones', href: '/notifications', badge: 3 },
-    { icon: FileText, label: 'Formularios', href: '/forms', badge: 0 },
-    { icon: User, label: 'Usuarios', href: '/users', badge: 0 },
+    { icon: FileText, label: 'Formularios', href: '/forms' },
+    { icon: User, label: 'Usuarios', href: '/users' },
   ];
 
+  const [showStats, setShowStats] = useState(false);
   const handleNavigation = (href: string) => {
-    router.push(href);
+    if (href === '/dashboard') {
+      setShowStats(true);
+    } else {
+      setShowStats(false);
+      router.push(href);
+    }
   };
 
   const handleLogout = () => {
@@ -206,6 +220,18 @@ export default function Page() {
       .slice(0, 2);
   };
 
+  const getAvatarColor = (email: string) => {
+    const colors = [
+      'bg-purple-500',
+      'bg-pink-500', 
+      'bg-orange-500',
+      'bg-green-500',
+      'bg-blue-500'
+    ];
+    const index = email.length % colors.length;
+    return colors[index];
+  };
+
   // Carga según statusFilter
   useEffect(() => {
     const load = async () => {
@@ -218,10 +244,8 @@ export default function Page() {
         } else if (filters.statusFilter === 'all') {
           setDeletedLoading(true);
           setDeletedError(null);
-          const [_, deleted] = await Promise.all([
-            refreshActive(),
-            applicantApi.getDeleted(),
-          ]);
+          const deleted = await applicantApi.getDeleted();
+          await refreshActive();
           setDeletedApplicants(deleted);
         } else {
           await refreshActive();
@@ -242,9 +266,19 @@ export default function Page() {
     return applicants;
   }, [filters.statusFilter, applicants, deletedApplicants]);
 
+
+  // Paginación
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
   const filteredApplicants = useMemo(() => {
     return applyFilters(sourceApplicants);
   }, [applyFilters, sourceApplicants]);
+
+  const totalPages = Math.ceil(filteredApplicants.length / pageSize);
+  const paginatedApplicants = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredApplicants.slice(start, start + pageSize);
+  }, [filteredApplicants, currentPage, pageSize]);
 
   const isLoading = applicantsLoading || (filters.statusFilter !== 'active' && deletedLoading);
 
@@ -330,11 +364,9 @@ export default function Page() {
     } else if (filters.statusFilter === 'all') {
       setDeletedLoading(true);
       try {
-        const [_, deleted] = await Promise.all([
-          refreshActive(),
-          applicantApi.getDeleted(),
-        ]);
-        setDeletedApplicants(deleted);
+  const deleted = await applicantApi.getDeleted();
+  await refreshActive();
+  setDeletedApplicants(deleted);
       } finally {
         setDeletedLoading(false);
       }
@@ -386,13 +418,16 @@ export default function Page() {
 
   if (applicantsError || deletedError) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--color-background-light)' }}>
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Error: {applicantsError || deletedError}</p>
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+        <div className="text-center p-8 bg-white rounded-lg shadow-lg max-w-md mx-auto">
+          <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+            <X className="h-8 w-8 text-red-600" />
+          </div>
+          <h3 className="text-lg font-semibold text-neutral-900 mb-2">Error al cargar datos</h3>
+          <p className="text-red-600 mb-6">{applicantsError || deletedError}</p>
           <button
             onClick={handleRefresh}
-            className="px-4 py-2 text-white rounded-md hover:opacity-90"
-            style={{ backgroundColor: 'var(--color-primary)' }}
+            className="px-4 py-2 text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors duration-200"
             type="button"
           >
             Reintentar
@@ -403,16 +438,15 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--color-background-light)' }}>
+    <div className="min-h-screen bg-neutral-50">
       {/* Sidebar */}
       <div 
-        className={`fixed left-0 top-0 h-full border-r border-gray-200 flex flex-col transition-all duration-300 z-40 ${
+        className={`fixed left-0 top-0 h-full bg-gradient-to-br from-purple-50 to-pink-50 border-r border-neutral-200 flex flex-col transition-all duration-300 z-40 shadow-lg ${
           sidebarCollapsed ? 'w-16' : 'w-64'
         }`}
-        style={{ backgroundColor: 'var(--color-background-light)' }}
       >
         {/* Header del sidebar */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between p-4 border-b border-neutral-200">
           {!sidebarCollapsed && (
             <div className="flex items-center gap-2">
               <Image
@@ -427,52 +461,50 @@ export default function Page() {
           
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
+            className="p-2 rounded-lg hover:bg-neutral-100 transition-colors duration-200 group"
             title={sidebarCollapsed ? 'Expandir menú' : 'Contraer menú'}
           >
             {sidebarCollapsed ? (
-              <ChevronRight className="h-4 w-4 text-gray-600" />
+              <ChevronRight className="h-4 w-4 text-neutral-600 group-hover:text-neutral-900" />
             ) : (
-              <ChevronLeft className="h-4 w-4 text-gray-600" />
+              <ChevronLeft className="h-4 w-4 text-neutral-600 group-hover:text-neutral-900" />
             )}
           </button>
         </div>
 
         {/* Navegación */}
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-2">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
-            
             return (
               <button
                 key={item.href}
                 onClick={() => handleNavigation(item.href)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all duration-200 group relative ${
+                className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-all duration-200 group relative ${
                   isActive
-                    ? 'text-white'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md'
+                    : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'
                 }`}
-                style={isActive ? { backgroundColor: 'var(--color-primary)' } : {}}
                 title={sidebarCollapsed ? item.label : undefined}
               >
-                <div className={`flex-shrink-0 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`}>
+                <div className={`flex-shrink-0 ${
+                  isActive ? 'text-white' : 'text-neutral-500 group-hover:text-purple-600'
+                }`}>
                   <Icon className="h-5 w-5" />
                 </div>
-                
                 {!sidebarCollapsed && (
                   <>
                     <span className="font-medium text-sm truncate">{item.label}</span>
                     {item.badge && item.badge > 0 && (
-                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                      <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[20px] text-center font-medium">
                         {item.badge > 99 ? '99+' : item.badge}
                       </span>
                     )}
                   </>
                 )}
-                
                 {sidebarCollapsed && item.badge && item.badge > 0 && (
-                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                  <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center font-medium">
                     {item.badge > 9 ? '9+' : item.badge}
                   </div>
                 )}
@@ -482,31 +514,26 @@ export default function Page() {
         </nav>
 
         {/* Perfil de usuario */}
-        <div className="p-4 border-t border-gray-200">
-          <div className={`flex items-center gap-3 p-3 rounded-lg ${sidebarCollapsed ? 'justify-center' : ''}`}>
+        <div className="p-4 border-t border-neutral-200">
+          <div className={`flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 shadow-sm ${sidebarCollapsed ? 'justify-center' : ''}`}> 
             <div 
-              className="w-10 h-10 rounded-full flex items-center justify-center text-white font-medium text-sm"
-              style={{ backgroundColor: 'var(--color-primary)' }}
+              className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md border-4 border-white ${getAvatarColor(userEmail)}`}
             >
               {getUserInitials(userEmail)}
             </div>
-            
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{userEmail}</p>
-                <p className="text-xs text-gray-500">Administradora</p>
+                <p className="text-base font-bold text-purple-700 truncate">{userEmail}</p>
+                <p className="text-xs text-pink-600 font-semibold mt-1">Administradora</p>
               </div>
             )}
           </div>
-          
           <button
             onClick={handleLogout}
-            className={`w-full flex items-center gap-2 px-3 py-2 mt-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors ${
-              sidebarCollapsed ? 'justify-center' : ''
-            }`}
+            className={`w-full flex items-center gap-2 px-4 py-2 mt-4 text-sm font-semibold text-white bg-gradient-to-r from-pink-500 to-purple-500 rounded-xl shadow-md hover:from-pink-600 hover:to-purple-600 transition-all duration-200 ${sidebarCollapsed ? 'justify-center' : ''}`}
             title={sidebarCollapsed ? 'Cerrar Sesión' : undefined}
           >
-            <LogOut className="h-4 w-4" />
+            <LogOut className="h-5 w-5" />
             {!sidebarCollapsed && <span>Cerrar Sesión</span>}
           </button>
         </div>
@@ -518,38 +545,48 @@ export default function Page() {
           sidebarCollapsed ? 'ml-16' : 'ml-64'
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <Greeting name={userEmail.split('@')[0]} />
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h1 className="text-3xl font-bold" style={{ color: 'var(--color-foreground)' }}>
-                Gestión de Applicants
-              </h1>
-              <div className="flex space-x-3">
+          <div className="mb-8 fade-in">
+            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+              <div>
+                <h1 className="text-3xl font-bold text-neutral-900 mb-2">
+                  Gestión de Applicants
+                </h1>
+                <p className="text-neutral-600">
+                  Administra y supervisa todos los candidatos del sistema
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={handleRefresh}
+                  onClick={async () => {
+                    await handleRefresh();
+                    if (statsRef.current) {
+                      await statsRef.current.refresh();
+                    }
+                  }}
                   disabled={isLoading}
-                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                   type="button"
                 >
-                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
                   Actualizar
                 </button>
                 <button
                   onClick={handleExport}
-                  className="flex items-center px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex items-center gap-2 px-4 py-2 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 shadow-sm"
                   type="button"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar
+                  <Download className="h-4 w-4" />
+                  Exportar CSV
                 </button>
                 <button
                   onClick={() => setActiveModal('create')}
-                  className="flex items-center px-4 py-2 text-white rounded-md hover:opacity-90 focus:outline-none focus:ring-2"
-                  style={{ backgroundColor: 'var(--color-primary)' }}
+                  className="flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 shadow-md hover:shadow-lg"
                   type="button"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4" />
                   Nuevo Applicant
                 </button>
               </div>
@@ -557,11 +594,14 @@ export default function Page() {
           </div>
 
           {/* Estadísticas */}
-          <div className="mb-8">
-            <ApplicantStats ref={statsRef} />
-          </div>
+          {showStats && (
+            <div id="dashboard-stats" className="mb-8">
+              <ApplicantStats ref={statsRef} />
+            </div>
+          )}
 
           {/* Filtros */}
+
           <SearchAndFilters
             searchTerm={filters.searchTerm}
             onSearchChange={setSearchTerm}
@@ -575,38 +615,113 @@ export default function Page() {
             totalCount={totalBase}
           />
 
+          {/* Paginación */}
+
+
           {/* Botón para limpiar filtros */}
           {hasActiveFilters && (
-            <div className="mb-4">
+            <div className="mb-6 fade-in">
               <button
                 onClick={clearAllFilters}
-                className="text-sm underline hover:opacity-80"
-                style={{ color: 'var(--color-primary)' }}
+                className="inline-flex items-center gap-2 text-sm text-purple-600 hover:text-purple-800 underline hover:no-underline transition-colors duration-200"
                 type="button"
               >
-                Limpiar filtros de búsqueda
+                <X className="h-3 w-3" />
+                Limpiar todos los filtros
               </button>
             </div>
           )}
 
           {/* Contenido principal */}
           {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-              <span className="ml-3 text-gray-600">Cargando applicants...</span>
+            <div className="flex justify-center items-center py-20">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
+                <p className="text-neutral-600 font-medium">Cargando applicants...</p>
+              </div>
             </div>
           ) : filteredApplicants.length === 0 ? (
-            <div className="bg-white shadow-md rounded-lg p-10 text-center text-gray-500">
-              {emptyLabel}
+            <div className="bg-white shadow-lg rounded-lg p-12 text-center fade-in">
+              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+                <Users className="h-10 w-10 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+                {emptyLabel}
+              </h3>
+              <p className="text-neutral-600 mb-6">
+                {hasActiveFilters 
+                  ? 'Intenta ajustar los filtros de búsqueda' 
+                  : 'Comienza agregando tu primer applicant'
+                }
+              </p>
+              {!hasActiveFilters && (
+                <button
+                  onClick={() => setActiveModal('create')}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+                  type="button"
+                >
+                  <Plus className="h-4 w-4" />
+                  Crear Applicant
+                </button>
+              )}
             </div>
           ) : (
-            <ApplicantList
-              applicants={filteredApplicants}
-              onEdit={handleEdit}
-              onDelete={handleDeleteConfirm}
-              onView={handleView}
-              onRestore={handleRestore}
-            />
+            <>
+              <ApplicantList
+                applicants={paginatedApplicants}
+                onEdit={handleEdit}
+                onDelete={handleDeleteConfirm}
+                onView={handleView}
+                onRestore={handleRestore}
+              />
+              {/* Paginación debajo del panel */}
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8 fade-in">
+                <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
+                  <label htmlFor="page-size-select" className="text-sm text-purple-700 font-semibold">Mostrar</label>
+                  <select
+                    id="page-size-select"
+                    aria-label="Seleccionar cantidad por página"
+                    title="Seleccionar cantidad por página"
+                    value={pageSize}
+                    onChange={e => {
+                      setPageSize(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 border border-purple-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium text-purple-700"
+                  >
+                    {[10, 25, 50, 100].map(size => (
+                      <option key={size} value={size}>{size}</option>
+                    ))}
+                  </select>
+                  <span className="text-sm text-purple-700 font-semibold">por página</span>
+                </div>
+                <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
+                  <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2 py-1 rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-900 disabled:opacity-50 font-semibold shadow"
+                    type="button"
+                    aria-label="Página anterior"
+                    title="Página anterior"
+                  >
+                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                  <span className="text-sm font-bold text-purple-700">
+                    Página {currentPage} de {totalPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages || totalPages === 0}
+                    className="px-2 py-1 rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-900 disabled:opacity-50 font-semibold shadow"
+                    type="button"
+                    aria-label="Página siguiente"
+                    title="Página siguiente"
+                  >
+                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              </div>
+            </>
           )}
 
           {/* Modales */}
@@ -652,37 +767,46 @@ export default function Page() {
             size="md"
           >
             {selectedApplicant && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">ID</label>
-                    <p className="text-sm text-gray-900">{selectedApplicant.id}</p>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1">ID</label>
+                    <p className="text-sm text-neutral-900 bg-neutral-50 p-2 rounded font-mono">{selectedApplicant.id}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
-                    <p className="text-sm text-gray-900">{selectedApplicant.email}</p>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1">Email</label>
+                    <p className="text-sm text-neutral-900">{selectedApplicant.email}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Nombre</label>
-                    <p className="text-sm text-gray-900">{selectedApplicant.firstName}</p>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1">Nombre</label>
+                    <p className="text-sm text-neutral-900">{selectedApplicant.firstName}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Apellido</label>
-                    <p className="text-sm text-gray-900">{selectedApplicant.lastName}</p>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1">Apellido</label>
+                    <p className="text-sm text-neutral-900">{selectedApplicant.lastName}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Idioma</label>
-                    <p className="text-sm text-gray-900">
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1">Idioma</label>
+                    <span className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
                       {getLanguageDisplayName((selectedApplicant.language as Language) ?? Language.ES)}
-                    </p>
+                    </span>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Tipo</label>
-                    <p className="text-sm text-gray-900">{selectedApplicant.mentor ? 'Mentor' : 'Colaboradora'}</p>
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1">Tipo</label>
+                    <span className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full border ${
+                      selectedApplicant.mentor 
+                        ? 'bg-green-100 text-green-800 border-green-200' 
+                        : 'bg-purple-100 text-purple-800 border-purple-200'
+                    }`}>
+                      <div className={`w-2 h-2 rounded-full mr-2 ${
+                        selectedApplicant.mentor ? 'bg-green-500' : 'bg-purple-500'
+                      }`}></div>
+                      {selectedApplicant.mentor ? 'Mentor' : 'Colaboradora'}
+                    </span>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Creado</label>
-                    <p className="text-sm text-gray-900">
+                    <label className="block text-sm font-semibold text-neutral-700 mb-1">Creado</label>
+                    <p className="text-sm text-neutral-900">
                       {(() => {
                         const dt = parseApiTimestamp(selectedApplicant.timestamp as string | undefined);
                         return dt ? dt.toLocaleString('es-ES') : '—';
@@ -691,41 +815,40 @@ export default function Page() {
                   </div>
                   {selectedApplicant.deletedAt && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700">Eliminado</label>
-                      <p className="text-sm text-gray-900">
+                      <label className="block text-sm font-semibold text-neutral-700 mb-1">Eliminado</label>
+                      <p className="text-sm text-red-600 font-medium">
                         {new Date(selectedApplicant.deletedAt).toLocaleString('es-ES')}
                       </p>
                     </div>
                   )}
                 </div>
+                
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Roles Profesionales</label>
+                  <label className="block text-sm font-semibold text-neutral-700 mb-3">Roles Profesionales</label>
                   {selectedApplicant.roles.length === 0 ? (
-                    <p className="text-sm text-gray-500 italic">Sin roles definidos</p>
+                    <p className="text-sm text-neutral-500 italic bg-neutral-50 p-4 rounded-lg">Sin roles definidos</p>
                   ) : (
                     <div className="space-y-2">
                       {selectedApplicant.roles.map((role, index) => (
-                        <span
+                        <div
                           key={`${role}-${index}`}
-                          className="inline-block mr-2 mb-2 px-3 py-1 text-sm rounded-md font-medium"
-                          style={{ 
-                            backgroundColor: 'var(--color-primary-hover)', 
-                            color: 'var(--color-primary)' 
-                          }}
+                          className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg"
                         >
-                          {role}
-                        </span>
+                          <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0"></div>
+                          <span className="text-sm font-medium text-indigo-800">{role}</span>
+                        </div>
                       ))}
                     </div>
                   )}
                 </div>
-                <div className="flex justify-end pt-4">
+                
+                <div className="flex justify-end pt-4 border-t border-neutral-200">
                   <button
                     onClick={() => {
                       setActiveModal(null);
                       setSelectedApplicant(null);
                     }}
-                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                    className="px-4 py-2 text-neutral-700 bg-neutral-100 border border-neutral-300 rounded-lg hover:bg-neutral-200 hover:text-neutral-900 transition-all duration-200"
                     type="button"
                   >
                     Cerrar
