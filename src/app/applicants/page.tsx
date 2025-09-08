@@ -25,6 +25,7 @@ import {
 } from "../../components/ApplicantStats";
 import { Greeting } from "../../components/Greeting";
 import { SearchAndFilters } from "../../components/SearchAndFilters";
+import Notifications, { useNotificationBadge } from "../../components/Notifications";
 import { useApplicantFilters } from "../../features/hooks/useApplicantFilter";
 import { useApplicants } from "../../features/hooks/useApplicants";
 import { applicantApi } from "../../features/lib/applicants";
@@ -168,6 +169,10 @@ export default function Page() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
 
+  // Estados para las vistas
+  const [showStats, setShowStats] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+
   // Hook para manejar applicants
   const {
     applicants,
@@ -204,6 +209,9 @@ export default function Page() {
   const [deletedLoading, setDeletedLoading] = useState(false);
   const [deletedError, setDeletedError] = useState<string | null>(null);
 
+  // Hook para el badge de notificaciones
+  const notificationCount = useNotificationBadge(deletedApplicants);
+
   // Funciones del sidebar
   useEffect(() => {
     const email = sessionStorage.getItem("demo_email") || "";
@@ -213,17 +221,21 @@ export default function Page() {
   const menuItems = [
     { icon: Users, label: "Applicants", href: "/applicants" },
     { icon: BarChart3, label: "Dashboard", href: "/dashboard" },
-    { icon: Bell, label: "Notificaciones", href: "/notifications", badge: 3 },
+    { icon: Bell, label: "Notificaciones", href: "/notifications", badge: notificationCount },
     { icon: FileText, label: "Formularios", href: "/forms" },
     { icon: User, label: "Usuarios", href: "/users" },
   ];
 
-  const [showStats, setShowStats] = useState(false);
   const handleNavigation = (href: string) => {
     if (href === "/dashboard") {
       setShowStats(true);
+      setShowNotifications(false);
+    } else if (href === "/notifications") {
+      setShowNotifications(true);
+      setShowStats(false);
     } else {
       setShowStats(false);
+      setShowNotifications(false);
       router.push(href);
     }
   };
@@ -597,53 +609,18 @@ export default function Page() {
       >
         <div className="max-w-7xl mx-auto px-6 py-8">
           <Greeting name={userEmail.split("@")[0]} />
-          {/* Header */}
-          <div className="mb-8 fade-in">
-            <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-              <div>
-                <h1 className="text-3xl font-bold text-neutral-900 mb-2">
-                  Gestión de Applicants
-                </h1>
-                <p className="text-neutral-600">
-                  Administra y supervisa todos los candidatos del sistema
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                <button
-                  onClick={async () => {
-                    await handleRefresh();
-                    if (statsRef.current) {
-                      await statsRef.current.refresh();
-                    }
-                  }}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 px-4 py-2 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                  type="button"
-                >
-                  <RefreshCw
-                    className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
-                  />
-                  Actualizar
-                </button>
-                <button
-                  onClick={handleExport}
-                  className="flex items-center gap-2 px-4 py-2 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 shadow-sm"
-                  type="button"
-                >
-                  <Download className="h-4 w-4" />
-                  Exportar CSV
-                </button>
-                <button
-                  onClick={() => setActiveModal("create")}
-                  className="flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 shadow-md hover:shadow-lg"
-                  type="button"
-                >
-                  <Plus className="h-4 w-4" />
-                  Nuevo Applicant
-                </button>
-              </div>
-            </div>
-          </div>
+
+          {/* Mostrar Notificaciones */}
+          {showNotifications && (
+            <Notifications
+              deletedApplicants={deletedApplicants}
+              onRestore={async (email) => {
+                await applicantApi.restore(email);
+                await handleRefresh();
+              }}
+              onRefresh={handleRefresh}
+            />
+          )}
 
           {/* Estadísticas */}
           {showStats && (
@@ -652,138 +629,188 @@ export default function Page() {
             </div>
           )}
 
-          {/* Filtros */}
-
-          <SearchAndFilters
-            searchTerm={filters.searchTerm}
-            onSearchChange={setSearchTerm}
-            languageFilter={filters.languageFilter}
-            onLanguageFilterChange={setLanguageFilter}
-            mentorFilter={filters.mentorFilter}
-            onMentorFilterChange={setMentorFilter}
-            statusFilter={filters.statusFilter}
-            onStatusFilterChange={setStatusFilter}
-            filteredCount={filteredApplicants.length}
-            totalCount={totalBase}
-          />
-
-          {/* Paginación */}
-
-          {/* Botón para limpiar filtros */}
-          {hasActiveFilters && (
-            <div className="mb-6 fade-in">
-              <button
-                onClick={clearAllFilters}
-                className="inline-flex items-center gap-2 text-sm text-purple-600 hover:text-purple-800 underline hover:no-underline transition-colors duration-200"
-                type="button"
-              >
-                <X className="h-3 w-3" />
-                Limpiar todos los filtros
-              </button>
-            </div>
-          )}
-
-          {/* Contenido principal */}
-          {isLoading ? (
-            <div className="flex justify-center items-center py-20">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
-                <p className="text-neutral-600 font-medium">
-                  Cargando applicants...
-                </p>
-              </div>
-            </div>
-          ) : filteredApplicants.length === 0 ? (
-            <div className="bg-white shadow-lg rounded-lg p-12 text-center fade-in">
-              <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
-                <Users className="h-10 w-10 text-purple-600" />
-              </div>
-              <h3 className="text-xl font-semibold text-neutral-900 mb-2">
-                {emptyLabel}
-              </h3>
-              <p className="text-neutral-600 mb-6">
-                {hasActiveFilters
-                  ? "Intenta ajustar los filtros de búsqueda"
-                  : "Comienza agregando tu primer applicant"}
-              </p>
-              {!hasActiveFilters && (
-                <button
-                  onClick={() => setActiveModal("create")}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
-                  type="button"
-                >
-                  <Plus className="h-4 w-4" />
-                  Crear Applicant
-                </button>
-              )}
-            </div>
-          ) : (
+          {/* Contenido principal de applicants - solo se muestra cuando no hay vistas especiales */}
+          {!showStats && !showNotifications && (
             <>
-              <ApplicantList
-                applicants={paginatedApplicants}
-                onEdit={handleEdit}
-                onDelete={handleDeleteConfirm}
-                onView={handleView}
-                onRestore={handleRestore}
-              />
-              {/* Paginación debajo del panel */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8 fade-in">
-                <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
-                  <label
-                    htmlFor="page-size-select"
-                    className="text-sm text-purple-700 font-semibold"
-                  >
-                    Mostrar
-                  </label>
-                  <select
-                    id="page-size-select"
-                    aria-label="Seleccionar cantidad por página"
-                    title="Seleccionar cantidad por página"
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
-                    className="px-2 py-1 border border-purple-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium text-purple-700"
-                  >
-                    {[10, 25, 50, 100].map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="text-sm text-purple-700 font-semibold">
-                    por página
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="px-2 py-1 rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-900 disabled:opacity-50 font-semibold shadow"
-                    type="button"
-                    aria-label="Página anterior"
-                    title="Página anterior"
-                  >
-                    <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                  </button>
-                  <span className="text-sm font-bold text-purple-700">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((p) => Math.min(totalPages, p + 1))
-                    }
-                    disabled={currentPage === totalPages || totalPages === 0}
-                    className="px-2 py-1 rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-900 disabled:opacity-50 font-semibold shadow"
-                    type="button"
-                    aria-label="Página siguiente"
-                    title="Página siguiente"
-                  >
-                    <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                  </button>
+              {/* Header */}
+              <div className="mb-8 fade-in">
+                <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+                  <div>
+                    <h1 className="text-3xl font-bold text-neutral-900 mb-2">
+                      Gestión de Applicants
+                    </h1>
+                    <p className="text-neutral-600">
+                      Administra y supervisa todos los candidatos del sistema
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-3">
+                    <button
+                      onClick={async () => {
+                        await handleRefresh();
+                        if (statsRef.current) {
+                          await statsRef.current.refresh();
+                        }
+                      }}
+                      disabled={isLoading}
+                      className="flex items-center gap-2 px-4 py-2 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                      type="button"
+                    >
+                      <RefreshCw
+                        className={`h-4 w-4 ${isLoading ? "animate-spin" : ""}`}
+                      />
+                      Actualizar
+                    </button>
+                    <button
+                      onClick={handleExport}
+                      className="flex items-center gap-2 px-4 py-2 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 shadow-sm"
+                      type="button"
+                    >
+                      <Download className="h-4 w-4" />
+                      Exportar CSV
+                    </button>
+                    <button
+                      onClick={() => setActiveModal("create")}
+                      className="flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 shadow-md hover:shadow-lg"
+                      type="button"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Nuevo Applicant
+                    </button>
+                  </div>
                 </div>
               </div>
+
+              {/* Filtros */}
+              <SearchAndFilters
+                searchTerm={filters.searchTerm}
+                onSearchChange={setSearchTerm}
+                languageFilter={filters.languageFilter}
+                onLanguageFilterChange={setLanguageFilter}
+                mentorFilter={filters.mentorFilter}
+                onMentorFilterChange={setMentorFilter}
+                statusFilter={filters.statusFilter}
+                onStatusFilterChange={setStatusFilter}
+                filteredCount={filteredApplicants.length}
+                totalCount={totalBase}
+              />
+
+              {/* Botón para limpiar filtros */}
+              {hasActiveFilters && (
+                <div className="mb-6 fade-in">
+                  <button
+                    onClick={clearAllFilters}
+                    className="inline-flex items-center gap-2 text-sm text-purple-600 hover:text-purple-800 underline hover:no-underline transition-colors duration-200"
+                    type="button"
+                  >
+                    <X className="h-3 w-3" />
+                    Limpiar todos los filtros
+                  </button>
+                </div>
+              )}
+
+              {/* Contenido principal */}
+              {isLoading ? (
+                <div className="flex justify-center items-center py-20">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4" />
+                    <p className="text-neutral-600 font-medium">
+                      Cargando applicants...
+                    </p>
+                  </div>
+                </div>
+              ) : filteredApplicants.length === 0 ? (
+                <div className="bg-white shadow-lg rounded-lg p-12 text-center fade-in">
+                  <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
+                    <Users className="h-10 w-10 text-purple-600" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-neutral-900 mb-2">
+                    {emptyLabel}
+                  </h3>
+                  <p className="text-neutral-600 mb-6">
+                    {hasActiveFilters
+                      ? "Intenta ajustar los filtros de búsqueda"
+                      : "Comienza agregando tu primer applicant"}
+                  </p>
+                  {!hasActiveFilters && (
+                    <button
+                      onClick={() => setActiveModal("create")}
+                      className="inline-flex items-center gap-2 px-4 py-2 text-white bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200"
+                      type="button"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Crear Applicant
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <ApplicantList
+                    applicants={paginatedApplicants}
+                    onEdit={handleEdit}
+                    onDelete={handleDeleteConfirm}
+                    onView={handleView}
+                    onRestore={handleRestore}
+                  />
+                  {/* Paginación debajo del panel */}
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8 fade-in">
+                    <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
+                      <label
+                        htmlFor="page-size-select"
+                        className="text-sm text-purple-700 font-semibold"
+                      >
+                        Mostrar
+                      </label>
+                      <select
+                        id="page-size-select"
+                        aria-label="Seleccionar cantidad por página"
+                        title="Seleccionar cantidad por página"
+                        value={pageSize}
+                        onChange={(e) => {
+                          setPageSize(Number(e.target.value));
+                          setCurrentPage(1);
+                        }}
+                        className="px-2 py-1 border border-purple-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 font-medium text-purple-700"
+                      >
+                        {[10, 25, 50, 100].map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="text-sm text-purple-700 font-semibold">
+                        por página
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-2 py-1 rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-900 disabled:opacity-50 font-semibold shadow"
+                        type="button"
+                        aria-label="Página anterior"
+                        title="Página anterior"
+                      >
+                        <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                      <span className="text-sm font-bold text-purple-700">
+                        Página {currentPage} de {totalPages}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                        disabled={currentPage === totalPages || totalPages === 0}
+                        className="px-2 py-1 rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-900 disabled:opacity-50 font-semibold shadow"
+                        type="button"
+                        aria-label="Página siguiente"
+                        title="Página siguiente"
+                      >
+                        <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </>
           )}
 
