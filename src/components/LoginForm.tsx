@@ -21,9 +21,12 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
     if (!formData.email) newErrors.email = "El email es requerido";
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "Email no válido";
+
+    // El backend exige mínimo 8 caracteres
     if (!formData.password) newErrors.password = "La contraseña es requerida";
-    else if (formData.password.length < 6)
-      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
+    else if (formData.password.length < 8)
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres";
+
     setErrors(newErrors);
     return !newErrors.email && !newErrors.password;
   };
@@ -32,26 +35,40 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
     e.preventDefault();
     if (!validateForm()) return;
     setIsLoading(true);
+
     try {
-      const res = await fetch("/admin/test", {
-        headers: {
-          Authorization:
-            "Basic " + btoa(`${formData.email}:${formData.password}`),
-        },
+      const res = await fetch("/auth/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         cache: "no-store",
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
       });
 
-      if (!res.ok) throw new Error("Auth failed");
+      const data = await res.json().catch(() => ({}));
 
-      // Demo only
-      sessionStorage.setItem("demo_email", formData.email);
-      sessionStorage.setItem("demo_pass", formData.password);
+      if (!res.ok) {
+        const msg =
+          (data && (data.message || data.error || data.detail)) ||
+          "Credenciales inválidas o sin acceso";
+        throw new Error(msg);
+      }
 
+      // Guardamos el JWT (rápido). Si luego quieres httpOnly cookie, lo cambiamos.
+      localStorage.setItem("shehub_token", data.token);
+
+      // Redirige al panel
       router.push("/applicants");
-    } catch {
+    } catch (err: unknown) {
+      let errorMessage = "Credenciales inválidas o sin acceso";
+      if (err instanceof Error && err.message) {
+        errorMessage = err.message;
+      }
       setErrors((prev) => ({
         ...prev,
-        password: "Credenciales inválidas o sin acceso",
+        password: errorMessage,
       }));
     } finally {
       setIsLoading(false);
@@ -364,3 +381,4 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
     </div>
   );
 }
+

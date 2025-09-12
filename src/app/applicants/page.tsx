@@ -37,7 +37,32 @@ import {
   getLanguageDisplayName,
 } from "../../features/types/applicant";
 
-// Helper para parsear timestamp del backend
+// ---------- JWT helpers ----------
+type JwtPayload = {
+  sub?: string;        // email
+  roles?: string[];    // ["ROLE_SUPER_ADMIN", ...]
+  exp?: number;        // seconds since epoch
+  iat?: number;        // seconds since epoch
+};
+
+function decodeJwt(token: string): JwtPayload | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch {
+    return null;
+  }
+}
+
 const parseApiTimestamp = (ts?: string) => {
   if (!ts) return null;
   const isoish = ts.replace(" ", "T");
@@ -165,15 +190,16 @@ export default function Page() {
   const pathname = usePathname();
   const statsRef = useRef<ApplicantStatsRef>(null);
 
-  // Estados del sidebar
+  // Sidebar / usuario
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
+  const [userRoles, setUserRoles] = useState<string[]>([]);
 
-  // Estados para las vistas
+  // Vistas
   const [showStats, setShowStats] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Hook para manejar applicants
+  // Hooks de applicants
   const {
     applicants,
     loading: applicantsLoading,
@@ -184,7 +210,7 @@ export default function Page() {
     deleteById,
   } = useApplicants();
 
-  // Hook para manejar filtros
+  // Filtros
   const {
     filters,
     setSearchTerm,
@@ -196,27 +222,45 @@ export default function Page() {
     hasActiveFilters,
   } = useApplicantFilters("active");
 
-  // Estados para modales y UI
+  // Modales / selección
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [selectedApplicant, setSelectedApplicant] =
     useState<ApplicantListItemDto | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Estado para eliminados
+  // Eliminados
   const [deletedApplicants, setDeletedApplicants] = useState<
     ApplicantListItemDto[]
   >([]);
   const [deletedLoading, setDeletedLoading] = useState(false);
   const [deletedError, setDeletedError] = useState<string | null>(null);
 
-  // Hook para el badge de notificaciones
+  // Notificaciones
   const notificationCount = useNotificationBadge(deletedApplicants);
 
-  // Funciones del sidebar
+  // --------- Cargar usuario desde JWT (token en localStorage) ----------
   useEffect(() => {
-    const email = sessionStorage.getItem("demo_email") || "";
-    setUserEmail(email);
-  }, []);
+    const token = typeof window !== "undefined" ? localStorage.getItem("shehub_token") : null;
+    if (!token) {
+      // No autenticado → al login
+      router.replace("/");
+      return;
+    }
+    const payload = decodeJwt(token);
+    if (!payload) {
+      localStorage.removeItem("shehub_token");
+      router.replace("/");
+      return;
+    }
+    // Validar expiración
+    if (payload.exp && payload.exp * 1000 < Date.now()) {
+      localStorage.removeItem("shehub_token");
+      router.replace("/");
+      return;
+    }
+    setUserEmail(payload.sub || "");
+    setUserRoles(Array.isArray(payload.roles) ? payload.roles : []);
+  }, [router]);
 
   const menuItems = [
     { icon: Users, label: "Applicants", href: "/applicants" },
@@ -241,14 +285,15 @@ export default function Page() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("demo_email");
-    sessionStorage.removeItem("demo_pass");
+    // Limpia token JWT
+    localStorage.removeItem("shehub_token");
     router.push("/");
   };
 
   const getUserInitials = (email: string) => {
-    return email
-      .split("@")[0]
+    const base = email?.split("@")[0] || "";
+    if (!base) return "AD";
+    return base
       .split(".")
       .map((part) => part.charAt(0).toUpperCase())
       .join("")
@@ -263,7 +308,7 @@ export default function Page() {
       "bg-green-500",
       "bg-blue-500",
     ];
-    const index = email.length % colors.length;
+    const index = (email?.length || 0) % colors.length;
     return colors[index];
   };
 
@@ -582,10 +627,10 @@ export default function Page() {
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-base font-bold text-purple-700 truncate">
-                  {userEmail}
+                  {userEmail || "—"}
                 </p>
                 <p className="text-xs text-pink-600 font-semibold mt-1">
-                  Administradora
+                  {userRoles?.length ? userRoles.join(" · ") : "Administradora"}
                 </p>
               </div>
             )}
@@ -608,7 +653,7 @@ export default function Page() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-6 py-8">
-          <Greeting name={userEmail.split("@")[0]} />
+          <Greeting name={(userEmail || "").split("@")[0]} />
 
           {/* Mostrar Notificaciones */}
           {showNotifications && (
@@ -629,7 +674,7 @@ export default function Page() {
             </div>
           )}
 
-          {/* Contenido principal de applicants - solo se muestra cuando no hay vistas especiales */}
+          {/* Contenido principal de applicants */}
           {!showStats && !showNotifications && (
             <>
               {/* Header */}
@@ -1011,3 +1056,4 @@ export default function Page() {
     </div>
   );
 }
+
