@@ -3,6 +3,7 @@
 const nextConfig = {
   async rewrites() {
     const raw = process.env.BACKEND_BASE_URL || 'http://localhost:8080';
+     console.log('🔍 BACKEND_BASE_URL en Vercel:', raw); 
     const base = raw.replace(/\/+$/, '');
 
     return [
