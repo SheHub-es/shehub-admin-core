@@ -12,11 +12,6 @@ import {
   UpdateApplicantDto,
 } from "../types/applicant";
 
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "").replace(
-  /\/+$/,
-  ""
-);
-
 export class ApiClientError extends Error {
   status: number;
   detail?: unknown;
@@ -29,14 +24,13 @@ export class ApiClientError extends Error {
   }
 }
 
+
 function buildUrl(endpoint: string) {
   const clean = endpoint.replace(/^\/+/, "");
   const path = clean ? `/${clean}` : "";
-  // Si hay base -> absoluto contra backend; si no -> relativo (rewrites)
-  return API_BASE_URL
-    ? `${API_BASE_URL}/api/applicants${path}`
-    : `/api/applicants${path}`;
+  return `/api/applicants${path}`; 
 }
+
 
 async function fetchApi<T>(
   endpoint: string,

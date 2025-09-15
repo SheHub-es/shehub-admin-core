@@ -1,15 +1,17 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {
- async rewrites() {
-  return [
-    { source: "/auth/:path*",  destination: "http://localhost:8080/auth/:path*" },
-      // { source: "/admin/:path*", destination: "http://localhost:8080/admin/:path*" },
-      // { source: "/api/:path*",   destination: "http://localhost:8080/api/:path*" },
-    { source: '/admin/:path*', destination: 'http://localhost:8080/admin/:path*' },
-    { source: '/api/:path*',   destination: 'http://localhost:8080/api/:path*' },
-  ];
-  
-},
 
+const nextConfig = {
+  async rewrites() {
+    const raw = process.env.BACKEND_BASE_URL || 'http://localhost:8080';
+    const base = raw.replace(/\/+$/, '');
+
+    return [
+      { source: '/auth/:path*',  destination: `${base}/auth/:path*`  },
+      { source: '/admin/:path*', destination: `${base}/admin/:path*` },
+      { source: '/api/:path*',   destination: `${base}/api/:path*`   },
+    ];
+  },
+  reactStrictMode: true,
+  swcMinify: true,
 };
 export default nextConfig;
