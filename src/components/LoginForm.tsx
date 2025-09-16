@@ -37,15 +37,15 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/auth-http/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        cache: "no-store",
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+     const res = await fetch("/auth/admin/login", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: formData.email,
+    password: formData.password,
+  }),
+});
+
 
       const data = await res.json().catch(() => ({}));
 
