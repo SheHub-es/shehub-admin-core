@@ -28,7 +28,11 @@ export class ApiClientError extends Error {
 function buildUrl(endpoint: string) {
   const clean = endpoint.replace(/^\/+/, "");
   const path = clean ? `/${clean}` : "";
-  return `/api/applicants${path}`; 
+
+  const isDev = process.env.NODE_ENV !== "production";
+  const base = isDev ? "/api/applicants" : `${process.env.NEXT_PUBLIC_API_URL}/api/applicants`;
+
+  return `${base}${path}`;
 }
 
 
