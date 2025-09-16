@@ -1,18 +1,19 @@
 /** @type {import('next').NextConfig} */
 
-const dev = process.env.NODE_ENV !== 'production';
+const raw = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const base = raw.replace(/\/+$/, '');
 
 const nextConfig = {
-  async rewrites() {
-    if (dev) {
-      return [
-        { source: '/auth/:path*',  destination: 'http://localhost:8080/auth/:path*' },
-        { source: '/admin/:path*', destination: 'http://localhost:8080/admin/:path*' },
-        { source: '/api/:path*',   destination: 'http://localhost:8080/api/:path*' },
-      ];
-    }
-    return []; // en producción no hagas rewrites
-  },
   reactStrictMode: true,
+  async rewrites() {
+    return [
+      { source: '/auth/:path*', destination: `${base}/auth/:path*` },
+      { source: '/admin/:path*', destination: `${base}/admin/:path*` },
+      { source: '/api/:path*', destination: `${base}/api/:path*` },
+    ];
+  },
 };
+
 export default nextConfig;
+
+
