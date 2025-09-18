@@ -25,24 +25,31 @@ import {
 } from "../../components/ApplicantStats";
 import { Greeting } from "../../components/Greeting";
 import { SearchAndFilters } from "../../components/SearchAndFilters";
-import Notifications, { useNotificationBadge } from "../../components/Notifications";
+import Notifications, {
+  useNotificationBadge,
+} from "../../components/Notifications";
+import ProfileModal from "../../components/ProfileModal";
 import { useApplicantFilters } from "../../features/hooks/useApplicantFilter";
 import { useApplicants } from "../../features/hooks/useApplicants";
-import { applicantApi } from "../../features/lib/applicants";
+import {
+  applicantApi,
+  applicantProfileApi,
+} from "../../features/lib/applicants";
 import {
   ApplicantListItemDto,
   CreateApplicantDto,
   Language,
   UpdateApplicantDto,
   getLanguageDisplayName,
+  ApplicantProfile,
 } from "../../features/types/applicant";
 
 // ---------- JWT helpers ----------
 type JwtPayload = {
-  sub?: string;        // email
-  roles?: string[];    // ["ROLE_SUPER_ADMIN", ...]
-  exp?: number;        // seconds since epoch
-  iat?: number;        // seconds since epoch
+  sub?: string;
+  roles?: string[];
+  exp?: number;
+  iat?: number;
 };
 
 function decodeJwt(token: string): JwtPayload | null {
@@ -70,7 +77,7 @@ const parseApiTimestamp = (ts?: string) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
-type ModalType = "create" | "edit" | "delete" | "view" | null;
+type ModalType = "create" | "edit" | "delete" | "view" | "profile" | null;
 
 function Modal({
   isOpen,
@@ -87,9 +94,7 @@ function Modal({
 }) {
   useEffect(() => {
     if (!isOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [isOpen, onClose]);
@@ -105,7 +110,7 @@ function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-y-auto fade-in"
+      className="fixed inset-0 z-50 overflow-y-auto"
       aria-modal="true"
       role="dialog"
     >
@@ -113,7 +118,6 @@ function Modal({
         <div
           className="fixed inset-0 transition-opacity bg-neutral-900/50 backdrop-blur-sm z-40"
           onClick={onClose}
-          aria-hidden="true"
         />
         <div
           className={`inline-block w-full ${sizeClasses[size]} p-0 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-xl relative z-50`}
@@ -228,6 +232,11 @@ export default function Page() {
     useState<ApplicantListItemDto | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Profile modal states
+  const [selectedProfile, setSelectedProfile] =
+    useState<ApplicantProfile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+
   // Eliminados
   const [deletedApplicants, setDeletedApplicants] = useState<
     ApplicantListItemDto[]
@@ -238,11 +247,13 @@ export default function Page() {
   // Notificaciones
   const notificationCount = useNotificationBadge(deletedApplicants);
 
-  // --------- Cargar usuario desde JWT (token en localStorage) ----------
+  // --------- Cargar usuario desde JWT ----------
   useEffect(() => {
-    const token = typeof window !== "undefined" ? localStorage.getItem("shehub_token") : null;
+    const token =
+      typeof window !== "undefined"
+        ? localStorage.getItem("shehub_token")
+        : null;
     if (!token) {
-      // No autenticado → al login
       router.replace("/");
       return;
     }
@@ -252,7 +263,6 @@ export default function Page() {
       router.replace("/");
       return;
     }
-    // Validar expiración
     if (payload.exp && payload.exp * 1000 < Date.now()) {
       localStorage.removeItem("shehub_token");
       router.replace("/");
@@ -265,7 +275,12 @@ export default function Page() {
   const menuItems = [
     { icon: Users, label: "Applicants", href: "/applicants" },
     { icon: BarChart3, label: "Dashboard", href: "/dashboard" },
-    { icon: Bell, label: "Notificaciones", href: "/notifications", badge: notificationCount },
+    {
+      icon: Bell,
+      label: "Notificaciones",
+      href: "/notifications",
+      badge: notificationCount,
+    },
     { icon: FileText, label: "Formularios", href: "/forms" },
     { icon: User, label: "Usuarios", href: "/users" },
   ];
@@ -285,7 +300,6 @@ export default function Page() {
   };
 
   const handleLogout = () => {
-    // Limpia token JWT
     localStorage.removeItem("shehub_token");
     router.push("/");
   };
@@ -338,7 +352,6 @@ export default function Page() {
         if (filters.statusFilter !== "active") setDeletedLoading(false);
       }
     };
-
     load();
   }, [filters.statusFilter, refreshActive]);
 
@@ -352,10 +365,10 @@ export default function Page() {
   // Paginación
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const filteredApplicants = useMemo(() => {
-    return applyFilters(sourceApplicants);
-  }, [applyFilters, sourceApplicants]);
-
+  const filteredApplicants = useMemo(
+    () => applyFilters(sourceApplicants),
+    [applyFilters, sourceApplicants]
+  );
   const totalPages = Math.ceil(filteredApplicants.length / pageSize);
   const paginatedApplicants = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
@@ -435,6 +448,23 @@ export default function Page() {
     }
   };
 
+  // Vista de perfil
+  const handleViewProfile = async (applicant: ApplicantListItemDto) => {
+    setSelectedApplicant(applicant);
+    setActiveModal("profile");
+    setProfileLoading(true);
+    setSelectedProfile(null);
+    try {
+      const profile = await applicantProfileApi.getByApplicantId(applicant.id);
+      setSelectedProfile(profile);
+    } catch (error) {
+      console.error("Error loading profile:", error);
+      setSelectedProfile(null);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
   const handleRefresh = async () => {
     if (filters.statusFilter === "deleted") {
       setDeletedLoading(true);
@@ -457,9 +487,7 @@ export default function Page() {
       await refreshActive();
     }
 
-    if (statsRef.current) {
-      await statsRef.current.refresh();
-    }
+    if (statsRef.current) await statsRef.current.refresh();
   };
 
   const totalBase = useMemo(() => sourceApplicants.length, [sourceApplicants]);
@@ -536,9 +564,7 @@ export default function Page() {
     <div className="min-h-screen bg-neutral-50">
       {/* Sidebar */}
       <div
-        className={`fixed left-0 top-0 h-full bg-gradient-to-br from-purple-50 to-pink-50 border-r border-neutral-200 flex flex-col transition-all duration-300 z-40 shadow-lg ${
-          sidebarCollapsed ? "w-16" : "w-64"
-        }`}
+        className={`fixed left-0 top-0 h-full bg-gradient-to-br from-purple-50 to-pink-50 border-r border-neutral-200 flex flex-col transition-all duration-300 z-40 shadow-lg ${sidebarCollapsed ? "w-16" : "w-64"}`}
       >
         {/* Header del sidebar */}
         <div className="flex items-center justify-between p-4 border-b border-neutral-200">
@@ -553,7 +579,6 @@ export default function Page() {
               />
             </div>
           )}
-
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
             className="p-2 rounded-lg hover:bg-neutral-100 transition-colors duration-200 group"
@@ -584,11 +609,7 @@ export default function Page() {
                 title={sidebarCollapsed ? item.label : undefined}
               >
                 <div
-                  className={`flex-shrink-0 ${
-                    isActive
-                      ? "text-white"
-                      : "text-neutral-500 group-hover:text-purple-600"
-                  }`}
+                  className={`flex-shrink-0 ${isActive ? "text-white" : "text-neutral-500 group-hover:text-purple-600"}`}
                 >
                   <Icon className="h-5 w-5" />
                 </div>
@@ -648,9 +669,7 @@ export default function Page() {
 
       {/* Contenido principal */}
       <div
-        className={`transition-all duration-300 ${
-          sidebarCollapsed ? "ml-16" : "ml-64"
-        }`}
+        className={`transition-all duration-300 ${sidebarCollapsed ? "ml-16" : "ml-64"}`}
       >
         <div className="max-w-7xl mx-auto px-6 py-8">
           <Greeting name={(userEmail || "").split("@")[0]} />
@@ -678,7 +697,7 @@ export default function Page() {
           {!showStats && !showNotifications && (
             <>
               {/* Header */}
-              <div className="mb-8 fade-in">
+              <div className="mb-8">
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
                   <div>
                     <h1 className="text-3xl font-bold text-neutral-900 mb-2">
@@ -692,9 +711,7 @@ export default function Page() {
                     <button
                       onClick={async () => {
                         await handleRefresh();
-                        if (statsRef.current) {
-                          await statsRef.current.refresh();
-                        }
+                        if (statsRef.current) await statsRef.current.refresh();
                       }}
                       disabled={isLoading}
                       className="flex items-center gap-2 px-4 py-2 text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 hover:border-neutral-400 focus:outline-none focus:ring-2 focus:ring-purple-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
@@ -741,7 +758,7 @@ export default function Page() {
 
               {/* Botón para limpiar filtros */}
               {hasActiveFilters && (
-                <div className="mb-6 fade-in">
+                <div className="mb-6">
                   <button
                     onClick={clearAllFilters}
                     className="inline-flex items-center gap-2 text-sm text-purple-600 hover:text-purple-800 underline hover:no-underline transition-colors duration-200"
@@ -764,7 +781,7 @@ export default function Page() {
                   </div>
                 </div>
               ) : filteredApplicants.length === 0 ? (
-                <div className="bg-white shadow-lg rounded-lg p-12 text-center fade-in">
+                <div className="bg-white shadow-lg rounded-lg p-12 text-center">
                   <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
                     <Users className="h-10 w-10 text-purple-600" />
                   </div>
@@ -795,9 +812,10 @@ export default function Page() {
                     onDelete={handleDeleteConfirm}
                     onView={handleView}
                     onRestore={handleRestore}
+                    onViewProfile={handleViewProfile}
                   />
                   {/* Paginación debajo del panel */}
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8 fade-in">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8">
                     <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
                       <label
                         htmlFor="page-size-select"
@@ -828,7 +846,9 @@ export default function Page() {
                     </div>
                     <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
                       <button
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
                         disabled={currentPage === 1}
                         className="px-2 py-1 rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-900 disabled:opacity-50 font-semibold shadow"
                         type="button"
@@ -844,7 +864,9 @@ export default function Page() {
                         onClick={() =>
                           setCurrentPage((p) => Math.min(totalPages, p + 1))
                         }
-                        disabled={currentPage === totalPages || totalPages === 0}
+                        disabled={
+                          currentPage === totalPages || totalPages === 0
+                        }
                         className="px-2 py-1 rounded-lg border border-purple-300 bg-white text-purple-700 hover:bg-purple-50 hover:text-purple-900 disabled:opacity-50 font-semibold shadow"
                         type="button"
                         aria-label="Página siguiente"
@@ -963,12 +985,8 @@ export default function Page() {
                       }`}
                     >
                       <div
-                        className={`w-2 h-2 rounded-full mr-2 ${
-                          selectedApplicant.mentor
-                            ? "bg-green-500"
-                            : "bg-purple-500"
-                        }`}
-                      ></div>
+                        className={`w-2 h-2 rounded-full mr-2 ${selectedApplicant.mentor ? "bg-green-500" : "bg-purple-500"}`}
+                      />
                       {selectedApplicant.mentor ? "Mentor" : "Colaboradora"}
                     </span>
                   </div>
@@ -1014,7 +1032,7 @@ export default function Page() {
                           key={`${role}-${index}`}
                           className="flex items-center gap-3 p-3 bg-indigo-50 border border-indigo-200 rounded-lg"
                         >
-                          <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0"></div>
+                          <div className="w-2 h-2 bg-indigo-500 rounded-full flex-shrink-0" />
                           <span className="text-sm font-medium text-indigo-800">
                             {role}
                           </span>
@@ -1040,6 +1058,20 @@ export default function Page() {
             )}
           </Modal>
 
+          {/* Modal de Perfil (refactor a componente) */}
+          <ProfileModal
+            isOpen={activeModal === "profile"}
+            onClose={() => {
+              setActiveModal(null);
+              setSelectedApplicant(null);
+              setSelectedProfile(null);
+            }}
+            applicant={selectedApplicant}
+            profile={selectedProfile}
+            isLoading={profileLoading}
+            onSaved={(updated) => setSelectedProfile(updated)}
+          />
+
           <ConfirmModal
             isOpen={activeModal === "delete"}
             onClose={() => {
@@ -1056,4 +1088,3 @@ export default function Page() {
     </div>
   );
 }
-

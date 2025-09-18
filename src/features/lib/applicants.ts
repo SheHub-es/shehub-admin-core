@@ -10,6 +10,9 @@ import {
   Language,
   PaginatedResponse,
   UpdateApplicantDto,
+  ApplicantProfile,
+  UpdateApplicantProfileDto,
+  CreateApplicantProfileDto,
 } from "../types/applicant";
 
 export class ApiClientError extends Error {
@@ -24,23 +27,38 @@ export class ApiClientError extends Error {
   }
 }
 
-
 function buildUrl(endpoint: string) {
   const clean = endpoint.replace(/^\/+/, "");
   const path = clean ? `/${clean}` : "";
 
-  const isDev = process.env.NODE_ENV !== "production";
-  const base = isDev ? "/api/applicants" : `${process.env.NEXT_PUBLIC_API_URL}/api/applicants`;
+  if (process.env.NODE_ENV === "development") {
+    const url = `/api/applicants${path}`;
+    console.log("🔵 DEV URL:", url);
+    return url;
+  }
 
-  return `${base}${path}`;
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (!apiUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL no está configurada");
+  }
+  const url = `${apiUrl}/api/applicants${path}`;
+  console.log("🟢 PROD URL:", url);
+  return url;
+  return `${apiUrl}/api/applicants${path}`;
 }
-
 
 async function fetchApi<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
   const url = buildUrl(endpoint);
+
+  console.log("🚀 FETCH REQUEST:", {
+    url,
+    method: options.method || "GET",
+    body: options.body,
+    headers: options.headers,
+  });
 
   const response = await fetch(url, {
     headers: {
@@ -50,7 +68,11 @@ async function fetchApi<T>(
     ...options,
   });
 
-  // Intenta parsear el cuerpo (texto o JSON)
+  console.log("📡 FETCH RESPONSE:", {
+    status: response.status,
+    ok: response.ok,
+    headers: Object.fromEntries(response.headers.entries()),
+  });
   const contentType = response.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
 
@@ -86,7 +108,6 @@ async function fetchApi<T>(
     return response.json();
   }
 
-  // Si el backend no envía JSON, devolvemos vacío tipado
   return {} as T;
 }
 
@@ -151,7 +172,6 @@ export const applicantApi = {
     return fetchApi(`count/mentor/${mentor}`);
   },
 
-  // Este endpoint existe en ApplicantController (no es el /admin con BasicAuth)
   getExpiredDeleted: async (): Promise<Applicant[]> => {
     return fetchApi("admin/expired-deleted");
   },
@@ -160,12 +180,10 @@ export const applicantApi = {
     return fetchApi("deleted");
   },
 
-  // STATS - Obtener estadísticas básicas
   getStats: async (): Promise<ApplicantStatsDto> => {
     return fetchApi("stats");
   },
 
-  // STATS - Obtener estadísticas por idioma
   getStatsByLanguage: async (): Promise<Record<string, number>> => {
     const languages = Object.values(Language);
     const stats: Record<string, number> = {};
@@ -227,9 +245,179 @@ export const applicantApi = {
   },
 
   cleanupExpired: async (): Promise<number> => {
-    // Este endpoint también está en ApplicantController como /api/applicants/admin/cleanup-expired
     return fetchApi("admin/cleanup-expired", {
       method: "DELETE",
     });
+  },
+};
+
+export const applicantProfileApi = {
+  getByApplicantId: async (
+    applicantId: number
+  ): Promise<ApplicantProfile | null> => {
+    try {
+      const response = await fetch(buildUrl(`${applicantId}/profile`), {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.status === 404) {
+        return null;
+      }
+
+      if (!response.ok) {
+        let message: string = "Network error";
+        try {
+          const errorData = await response.json();
+          message = errorData.message || message;
+        } catch {}
+        throw new ApiClientError(response.status, message);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        throw error;
+      }
+      throw new ApiClientError(
+        500,
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
+  },
+
+  create: async (
+    applicantId: number,
+    profileData: Omit<CreateApplicantProfileDto, "applicantId">
+  ): Promise<ApplicantProfile> => {
+    try {
+      const response = await fetch(buildUrl(`${applicantId}/profile`), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...profileData,
+          applicantId,
+        }),
+      });
+
+      if (!response.ok) {
+        let message: string = "Network error";
+        try {
+          const errorData = await response.json();
+          message = errorData.message || message;
+        } catch {
+          // Si no puede parsear el error
+        }
+        throw new ApiClientError(response.status, message);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        throw error;
+      }
+      throw new ApiClientError(
+        500,
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
+  },
+
+  // Actualizar perfil por profile ID
+  updateById: async (
+    profileId: number,
+    profileData: UpdateApplicantProfileDto
+  ): Promise<ApplicantProfile> => {
+    try {
+      const cleanData: UpdateApplicantProfileDto = {};
+
+      Object.keys(profileData).forEach((key) => {
+        const typedKey = key as keyof UpdateApplicantProfileDto;
+        const value = profileData[typedKey];
+        if (value !== undefined && value !== "") {
+          cleanData[typedKey] = value;
+        }
+      });
+
+      const response = await fetch(buildUrl(`profile/${profileId}`), {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(cleanData),
+      });
+
+      if (!response.ok) {
+        let message: string = "Network error";
+        try {
+          const errorData = await response.json();
+          message = errorData.message || message;
+        } catch {
+          // Si no puede parsear el error
+        }
+        throw new ApiClientError(response.status, message);
+      }
+
+      return response.json();
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        throw error;
+      }
+      throw new ApiClientError(
+        500,
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
+  },
+
+  // Eliminar perfil por profile ID (aunque no lo uses en el UI)
+  deleteById: async (profileId: number): Promise<void> => {
+    try {
+      const response = await fetch(buildUrl(`profile/${profileId}`), {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        let message: string = "Network error";
+        try {
+          const errorData = await response.json();
+          message = errorData.message || message;
+        } catch {
+          // Si no puede parsear el error
+        }
+        throw new ApiClientError(response.status, message);
+      }
+
+      // DELETE no devuelve contenido
+    } catch (error) {
+      if (error instanceof ApiClientError) {
+        throw error;
+      }
+      throw new ApiClientError(
+        500,
+        error instanceof Error ? error.message : "Unknown error"
+      );
+    }
+  },
+
+  // Verificar si un applicant tiene perfil
+  hasProfile: async (applicantId: number): Promise<boolean> => {
+    try {
+      const profile = await applicantProfileApi.getByApplicantId(applicantId);
+      return profile !== null;
+    } catch (error) {
+      // Si hay error 404, significa que no tiene perfil
+      if (error instanceof ApiClientError && error.status === 404) {
+        return false;
+      }
+
+      throw error;
+    }
   },
 };
