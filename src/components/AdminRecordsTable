@@ -1,0 +1,97 @@
+// Componente de tabla para AdminRecords
+// Muestra la lista de registros administrativos, con columnas y acciones
+
+"use client";
+
+import { useEffect, useState } from "react";
+import { AdminRecordsListItemDTO } from "@/types/adminRecordsTypes"; // Ajusta la ruta según tu proyecto
+import { fetchAdminRecords } from "@/lib/adminRecordsApi"; // Función de ejemplo para obtener datos
+import Button from "@/components/common/Button"; // Botón reutilizable de tu proyecto
+
+interface AdminRecordsTableProps {
+  // Posibles props que quieras pasar, como callbacks
+  onEdit?: (record: AdminRecordsListItemDTO) => void;
+  onDelete?: (recordId: number) => void;
+}
+
+export default function AdminRecordsTable({
+  onEdit,
+  onDelete,
+}: AdminRecordsTableProps) {
+  const [records, setRecords] = useState<AdminRecordsListItemDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Cargar los datos al montar el componente
+    async function loadRecords() {
+      setLoading(true);
+      try {
+        const data = await fetchAdminRecords(); // Llama a tu API backend
+        setRecords(data);
+      } catch (error) {
+        console.error("Error loading admin records", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadRecords();
+  }, []);
+
+  if (loading) {
+    return <p>Cargando registros...</p>;
+  }
+
+  return (
+    <div className="overflow-x-auto w-full">
+      <table className="min-w-full border border-gray-200">
+        <thead className="bg-gray-100">
+          <tr>
+            <th className="px-4 py-2 text-left">ID</th>
+            <th className="px-4 py-2 text-left">Applicant</th>
+            <th className="px-4 py-2 text-left">Status</th>
+            <th className="px-4 py-2 text-left">Proyectos</th>
+            <th className="px-4 py-2 text-left">Ciudad</th>
+            <th className="px-4 py-2 text-left">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {records.map((record) => (
+            <tr key={record.id} className="border-t border-gray-200">
+              <td className="px-4 py-2">{record.id}</td>
+              <td className="px-4 py-2">
+                {record.applicant.firstName} {record.applicant.lastName}{" "}
+                {record.applicant.email && `(${record.applicant.email})`}
+              </td>
+              <td className="px-4 py-2">{record.status}</td>
+              <td className="px-4 py-2">
+                {record.projects?.map((p) => p.title).join(", ")}
+              </td>
+              <td className="px-4 py-2">{record.ciudad}</td>
+              <td className="px-4 py-2 flex gap-2">
+                {onEdit && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => onEdit(record)}
+                  >
+                    Editar
+                  </Button>
+                )}
+                {onDelete && (
+                  <Button
+                    type="button"
+                    variant="danger"
+                    onClick={() => onDelete(record.id)}
+                  >
+                    Borrar
+                  </Button>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
