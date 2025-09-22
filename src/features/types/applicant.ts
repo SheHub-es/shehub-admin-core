@@ -320,3 +320,119 @@ export const validateGitHubUrl = (url: string): boolean => {
     /^https?:\/\/(www\.)?github\.com\/[\w\-._~:/?#[\]@!$&'()*+,;=]+$/;
   return githubRegex.test(url);
 };
+
+// DTO que representa una referencia mínima de un Applicant
+export interface ApplicantRefDTO {
+  id: number;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+// DTO usado para opciones múltiples asociadas a un AdminRecord
+export interface AdminRecordsMultiOptionDTO {
+  title: string;
+  link?: string;
+}
+
+// DTO usado para crear un nuevo AdminRecord desde el frontend
+export interface AdminRecordsCreateDTO {
+  status: Status;
+  projects?: string;
+  currently?: Currently;
+  ciudad?: string;
+  accessTo?: string;
+  orgNotes?: string;
+  bookingLink?: string;
+  portfolio?: string;
+  oneToOneNotes?: string;
+  projectInterview?: string;
+  notas?: string;
+  applicantId: number;
+  additionalAdmin1?: string;
+  additionalAdmin2?: string;
+  additionalAdmin3?: string;
+  additionalAdmin4?: string;
+  additionalAdmin5?: string;
+  additionalJson?: Record<string, any>;
+}
+
+// DTO que representa un AdminRecord completo, usado para obtener detalles
+export interface AdminRecordsDetailDTO {
+  id: number;
+  applicant?: ApplicantRefDTO;
+  status?: Status;
+  currently?: Currently;
+  ciudad?: string;
+  orgNotes?: string;
+  bookingLink?: string;
+  portfolio?: string;
+  oneToOneNotes?: string;
+  projectInterview?: string;
+  notas?: string;
+  projects?: AdminRecordsMultiOptionDTO[];
+  accessTo?: AdminRecordsMultiOptionDTO[];
+  additionalAdmin1?: string;
+  additionalAdmin2?: string;
+  additionalAdmin3?: string;
+  additionalAdmin4?: string;
+  additionalAdmin5?: string;
+  additionalJson?: Record<string, any>;
+}
+
+// DTO para listar AdminRecords en tablas o listados, con datos resumidos
+export interface AdminRecordsListItemDTO {
+  id: number;
+  applicant?: ApplicantRefDTO;
+  status?: Status;
+  projects?: AdminRecordsMultiOptionDTO[];
+  currently?: Currently;
+  ciudad?: string;
+  accessTo?: AdminRecordsMultiOptionDTO[];
+  portfolio?: string;
+}
+
+// DTO usado para actualizar parcialmente un AdminRecord (PATCH)
+export interface AdminRecordsPatchDTO {
+  status?: Status;
+  projects?: string;
+  currently?: Currently;
+  ciudad?: string;
+  accessTo?: string;
+  orgNotes?: string;
+  bookingLink?: string;
+  portfolio?: string;
+  oneToOneNotes?: string;
+  projectInterview?: string;
+  notas?: string;
+  additionalAdmin1?: string;
+  additionalAdmin2?: string;
+  additionalAdmin3?: string;
+  additionalAdmin4?: string;
+  additionalAdmin5?: string;
+  additionalJson?: Record<string, any>;
+}
+
+// DTO usado para actualizar completamente un AdminRecord (PUT)
+export interface AdminRecordsUpdateDTO {
+  status?: Status;
+  projects?: string;
+  currently?: Currently;
+  ciudad?: string;
+  accessTo?: string;
+  orgNotes?: string;
+  bookingLink?: string;
+  portfolio?: string;
+  oneToOneNotes?: string;
+  projectInterview?: string;
+  notas?: string;
+  additionalAdmin1?: string;
+  additionalAdmin2?: string;
+  additionalAdmin3?: string;
+  additionalAdmin4?: string;
+  additionalAdmin5?: string;
+  additionalJson?: Record<string, any>;
+}
+
+
+
