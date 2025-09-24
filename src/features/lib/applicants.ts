@@ -420,4 +420,84 @@ export const applicantProfileApi = {
       throw error;
     }
   },
+
+  // adminRecordsLib.ts
+  // Funciones utilitarias para convertir datos entre el frontend y el backend para AdminRecords
+
+  import {
+    AdminRecordsCreateDTO,
+    AdminRecordsPatchDTO,
+    AdminRecordsUpdateDTO,
+  } from "@/types/adminRecordsTypes";
+
+  // Convierte los datos del formulario a un DTO de creación
+  export const formDataToCreateDto = (
+    formData: Partial<AdminRecordsCreateDTO>
+  ): AdminRecordsCreateDTO => ({
+    status: formData.status || "NE",
+    projects: formData.projects,
+    currently: formData.currently,
+    ciudad: formData.ciudad,
+    accessTo: formData.accessTo,
+    orgNotes: formData.orgNotes,
+    bookingLink: formData.bookingLink,
+    portfolio: formData.portfolio,
+    oneToOneNotes: formData.oneToOneNotes,
+    projectInterview: formData.projectInterview,
+    notas: formData.notas,
+    applicantId: formData.applicantId!,
+    additionalAdmin1: formData.additionalAdmin1,
+    additionalAdmin2: formData.additionalAdmin2,
+    additionalAdmin3: formData.additionalAdmin3,
+    additionalAdmin4: formData.additionalAdmin4,
+    additionalAdmin5: formData.additionalAdmin5,
+    additionalJson: formData.additionalJson || {},
+  });
+
+  // Convierte los datos del formulario a un DTO de actualización
+  export const formDataToUpdateDto = (
+    formData: Partial<AdminRecordsUpdateDTO>
+  ): AdminRecordsUpdateDTO => ({
+    status: formData.status,
+    projects: formData.projects,
+    currently: formData.currently,
+    ciudad: formData.ciudad,
+    accessTo: formData.accessTo,
+    orgNotes: formData.orgNotes,
+    bookingLink: formData.bookingLink,
+    portfolio: formData.portfolio,
+    oneToOneNotes: formData.oneToOneNotes,
+    projectInterview: formData.projectInterview,
+    notas: formData.notas,
+    additionalAdmin1: formData.additionalAdmin1,
+    additionalAdmin2: formData.additionalAdmin2,
+    additionalAdmin3: formData.additionalAdmin3,
+    additionalAdmin4: formData.additionalAdmin4,
+    additionalAdmin5: formData.additionalAdmin5,
+    additionalJson: formData.additionalJson || {},
+  });
+
+  // Convierte los datos del formulario a un DTO de patch
+  export const formDataToPatchDto = (
+    formData: Partial<AdminRecordsPatchDTO>
+  ): AdminRecordsPatchDTO => ({
+    status: formData.status,
+    projects: formData.projects,
+    currently: formData.currently,
+    ciudad: formData.ciudad,
+    accessTo: formData.accessTo,
+    orgNotes: formData.orgNotes,
+    bookingLink: formData.bookingLink,
+    portfolio: formData.portfolio,
+    oneToOneNotes: formData.oneToOneNotes,
+    projectInterview: formData.projectInterview,
+    notas: formData.notas,
+    additionalAdmin1: formData.additionalAdmin1,
+    additionalAdmin2: formData.additionalAdmin2,
+    additionalAdmin3: formData.additionalAdmin3,
+    additionalAdmin4: formData.additionalAdmin4,
+    additionalAdmin5: formData.additionalAdmin5,
+    additionalJson: formData.additionalJson || {},
+  });
+
 };
