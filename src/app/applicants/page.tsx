@@ -29,6 +29,7 @@ import Notifications, {
   useNotificationBadge,
 } from "../../components/Notifications";
 import ProfileModal from "../../components/ProfileModal";
+import AdminRecordsModal from "../../components/AdminRecordsModal";
 import { useApplicantFilters } from "../../features/hooks/useApplicantFilter";
 import { useApplicants } from "../../features/hooks/useApplicants";
 import {
@@ -77,7 +78,14 @@ const parseApiTimestamp = (ts?: string) => {
   return isNaN(d.getTime()) ? null : d;
 };
 
-type ModalType = "create" | "edit" | "delete" | "view" | "profile" | null;
+type ModalType =
+  | "create"
+  | "edit"
+  | "delete"
+  | "view"
+  | "profile"
+  | "seguimiento"
+  | null;
 
 function Modal({
   isOpen,
@@ -236,6 +244,11 @@ export default function Page() {
   const [selectedProfile, setSelectedProfile] =
     useState<ApplicantProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+
+  // Estados para el modal de Seguimiento
+  const [seguimientoModal, setSeguimientoModal] = useState(false);
+  const [selectedApplicantForSeguimiento, setSelectedApplicantForSeguimiento] =
+    useState<ApplicantListItemDto | null>(null);
 
   // Eliminados
   const [deletedApplicants, setDeletedApplicants] = useState<
@@ -463,6 +476,12 @@ export default function Page() {
     } finally {
       setProfileLoading(false);
     }
+  };
+
+  //función para Seguimiento
+  const handleViewSeguimiento = (applicant: ApplicantListItemDto) => {
+    setSelectedApplicantForSeguimiento(applicant);
+    setSeguimientoModal(true);
   };
 
   const handleRefresh = async () => {
@@ -813,6 +832,7 @@ export default function Page() {
                     onView={handleView}
                     onRestore={handleRestore}
                     onViewProfile={handleViewProfile}
+                    onViewAdminRecord={handleViewSeguimiento}
                   />
                   {/* Paginación debajo del panel */}
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8">
@@ -1070,6 +1090,17 @@ export default function Page() {
             profile={selectedProfile}
             isLoading={profileLoading}
             onSaved={(updated) => setSelectedProfile(updated)}
+          />
+
+          {/* Modal de Seguimiento (AdminRecords) */}
+          <AdminRecordsModal
+            isOpen={seguimientoModal}
+            onClose={() => {
+              setSeguimientoModal(false);
+              setSelectedApplicantForSeguimiento(null);
+            }}
+            applicant={selectedApplicantForSeguimiento}
+            onRecordSaved={() => {}}
           />
 
           <ConfirmModal

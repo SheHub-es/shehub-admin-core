@@ -174,8 +174,6 @@ export const ApplicantStats = forwardRef<
   useEffect(() => {
     loadStats();
   }, []);
-
-  // Exponer la función loadStats al componente padre mediante ref
   useImperativeHandle(
     ref,
     () => ({

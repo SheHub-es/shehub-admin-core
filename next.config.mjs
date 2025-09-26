@@ -18,6 +18,7 @@ const nextConfig = {
       { source: '/auth/:path*', destination: `${base}/auth/:path*` },
       { source: '/admin/:path*', destination: `${base}/admin/:path*` },
       { source: '/api/:path*', destination: `${base}/api/:path*` },
+      { source: '/admin-records/:path*', destination: `${base}/admin-records/:path*` },
     ];
   },
 };

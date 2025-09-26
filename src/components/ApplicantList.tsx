@@ -8,6 +8,7 @@ import {
   Eye,
   Calendar,
   Mail,
+  Settings, 
 } from "lucide-react";
 import {
   ApplicantListItemDto,
@@ -22,6 +23,7 @@ interface ApplicantListProps {
   onView?: (applicant: ApplicantListItemDto) => void;
   onRestore?: (applicant: ApplicantListItemDto) => void;
   onViewProfile?: (applicant: ApplicantListItemDto) => void;
+  onViewAdminRecord?: (applicant: ApplicantListItemDto) => void;
   emptyLabel?: string;
 }
 
@@ -69,7 +71,8 @@ export function ApplicantList({
   onDelete,
   onView,
   onRestore,
-  onViewProfile, // NUEVA PROP
+  onViewProfile,
+  onViewAdminRecord,
   emptyLabel,
 }: ApplicantListProps) {
   if (applicants.length === 0) {
@@ -119,6 +122,12 @@ export function ApplicantList({
                 <div className="flex items-center gap-2">
                   <Eye className="h-4 w-4 text-purple-600" />
                   Perfil
+                </div>
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-neutral-700 uppercase tracking-wider min-w-[120px]">
+                <div className="flex items-center gap-2">
+                  <Settings className="h-4 w-4 text-purple-600" />
+                  Seguimiento
                 </div>
               </th>
               <th className="px-6 py-4 text-right text-xs font-bold text-neutral-700 uppercase tracking-wider min-w-[180px]">
@@ -238,19 +247,7 @@ export function ApplicantList({
                       )}
                     </span>
                   </td>
-                  {/* CELDA PERFIL */}
-                  <td className="px-6 py-3 whitespace-nowrap">
-                    {onViewProfile && (
-                      <button
-                        onClick={() => onViewProfile(applicant)}
-                        className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
-                        title="Ver perfil completo"
-                      >
-                        <Eye className="h-4 w-4" />
-                        Ver Perfil
-                      </button>
-                    )}
-                  </td>
+
                   <td className="px-6 py-4 text-sm">
                     <div className="max-w-[240px]">
                       {applicant.roles.length === 0 ? (
@@ -278,6 +275,34 @@ export function ApplicantList({
                         </div>
                       )}
                     </div>
+                  </td>
+
+                  {/* CELDA PERFIL */}
+                  <td className="px-6 py-3 whitespace-nowrap">
+                    {onViewProfile && (
+                      <button
+                        onClick={() => onViewProfile(applicant)}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-purple-600 bg-purple-50 border border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-1"
+                        title="Ver perfil completo"
+                      >
+                        <Eye className="h-4 w-4" />
+                        Ver Perfil
+                      </button>
+                    )}
+                  </td>
+
+                  {/* NUEVA CELDA ADMIN RECORD */}
+                  <td className="px-6 py-3 whitespace-nowrap">
+                    {onViewAdminRecord && (
+                      <button
+                        onClick={() => onViewAdminRecord(applicant)}
+                        className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-orange-600 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-1"
+                        title="Ver/gestionar registro administrativo"
+                      >
+                        <Settings className="h-4 w-4" />
+                        Gestionar
+                      </button>
+                    )}
                   </td>
 
                   <td className="px-6 py-4 whitespace-nowrap text-right">

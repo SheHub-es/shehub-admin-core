@@ -13,6 +13,7 @@ import {
   ApplicantProfile,
   UpdateApplicantProfileDto,
   CreateApplicantProfileDto,
+  
 } from "../types/applicant";
 
 export class ApiClientError extends Error {
@@ -33,7 +34,6 @@ function buildUrl(endpoint: string) {
 
   if (process.env.NODE_ENV === "development") {
     const url = `/api/applicants${path}`;
-    console.log("🔵 DEV URL:", url);
     return url;
   }
 
@@ -42,7 +42,6 @@ function buildUrl(endpoint: string) {
     throw new Error("NEXT_PUBLIC_API_URL no está configurada");
   }
   const url = `${apiUrl}/api/applicants${path}`;
-  console.log("🟢 PROD URL:", url);
   return url;
   return `${apiUrl}/api/applicants${path}`;
 }
@@ -53,13 +52,6 @@ async function fetchApi<T>(
 ): Promise<T> {
   const url = buildUrl(endpoint);
 
-  console.log("🚀 FETCH REQUEST:", {
-    url,
-    method: options.method || "GET",
-    body: options.body,
-    headers: options.headers,
-  });
-
   const response = await fetch(url, {
     headers: {
       "Content-Type": "application/json",
@@ -68,11 +60,6 @@ async function fetchApi<T>(
     ...options,
   });
 
-  console.log("📡 FETCH RESPONSE:", {
-    status: response.status,
-    ok: response.ok,
-    headers: Object.fromEntries(response.headers.entries()),
-  });
   const contentType = response.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
 

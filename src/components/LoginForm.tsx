@@ -82,7 +82,7 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-    // Limpiar error cuando el usuario empiece a escribir
+
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }

@@ -320,3 +320,199 @@ export const validateGitHubUrl = (url: string): boolean => {
     /^https?:\/\/(www\.)?github\.com\/[\w\-._~:/?#[\]@!$&'()*+,;=]+$/;
   return githubRegex.test(url);
 };
+
+// =========================
+// ENUMS (basados en el backend)
+// =========================
+
+export enum Status {
+  AP = "AP", // "Assigned to a Project"
+  NE = "NE", // "Not engaged"
+  RO = "RO", // "Reached out"
+  EG = "EG", // "Engaged"
+  NN = "NN", // "To revisit – Not for now"
+  CP = "CP", // "Completed Participation"
+  BR = "BR", // "To be reached"
+  CC = "CC"  // "Canceled communications"
+}
+
+export enum Currently {
+  PF = "PF", // "Proyecto freelance"
+  LJ = "LJ", // "Actively looking for a job"
+  UE = "UE", // "Unemployed"
+  FB = "FB", // "Finishing bootcamp"
+  FL = "FL", // "Freelancing"
+  PT = "PT"  // "Working part-time"
+}
+
+// Mapas de display para mostrar en la UI
+export const StatusDisplay: Record<Status, string> = {
+  [Status.AP]: "Assigned to a Project",
+  [Status.NE]: "Not engaged",
+  [Status.RO]: "Reached out",
+  [Status.EG]: "Engaged",
+  [Status.NN]: "To revisit – Not for now",
+  [Status.CP]: "Completed Participation",
+  [Status.BR]: "To be reached",
+  [Status.CC]: "Canceled communications"
+};
+
+export const CurrentlyDisplay: Record<Currently, string> = {
+  [Currently.PF]: "Proyecto freelance",
+  [Currently.LJ]: "Actively looking for a job",
+  [Currently.UE]: "Unemployed",
+  [Currently.FB]: "Finishing bootcamp",
+  [Currently.FL]: "Freelancing",
+  [Currently.PT]: "Working part-time"
+};
+
+
+// =========================
+// DTOs
+// =========================
+
+// DTO que representa una referencia mínima de un Applicant
+export interface ApplicantRefDTO {
+  id: Long; // ✅ Cambiado de number a Long
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+}
+
+// DTO usado para opciones múltiples asociadas a un AdminRecord
+export interface AdminRecordsMultiOptionDTO {
+  title: string;
+  link?: string;
+}
+
+// DTO usado para crear un nuevo AdminRecord desde el frontend
+export interface AdminRecordsCreateDTO {
+  status: Status;
+  projects?: string; 
+  currently?: Currently;
+  ciudad?: string;
+  accessTo?: string;
+  orgNotes?: string;
+  bookingLink?: string;
+  portfolio?: string;
+  oneToOneNotes?: string;
+  projectInterview?: string;
+  notas?: string;
+  applicantId: Long; 
+  additionalAdmin1?: string;
+  additionalAdmin2?: string;
+  additionalAdmin3?: string;
+  additionalAdmin4?: string;
+  additionalAdmin5?: string;
+  additionalJson?: Record<string, unknown>;
+}
+
+// DTO que representa un AdminRecord completo, usado para obtener detalles
+export interface AdminRecordsDetailDTO {
+  id: Long; 
+  applicant?: ApplicantRefDTO;
+  status?: Status;
+  currently?: Currently;
+  ciudad?: string;
+  orgNotes?: string;
+  bookingLink?: string;
+  portfolio?: string;
+  oneToOneNotes?: string;
+  projectInterview?: string;
+  notas?: string;
+  projects?: AdminRecordsMultiOptionDTO[]; 
+  accessTo?: AdminRecordsMultiOptionDTO[]; 
+  additionalAdmin1?: string;
+  additionalAdmin2?: string;
+  additionalAdmin3?: string;
+  additionalAdmin4?: string;
+  additionalAdmin5?: string;
+  additionalJson?: Record<string, unknown>;
+}
+
+// DTO para listar AdminRecords en tablas o listados, con datos resumidos
+export interface AdminRecordsListItemDTO {
+  id: Long; 
+  applicant?: ApplicantRefDTO;
+  status?: Status;
+  projects?: AdminRecordsMultiOptionDTO[];
+  currently?: Currently;
+  ciudad?: string;
+  accessTo?: AdminRecordsMultiOptionDTO[];
+  portfolio?: string;
+}
+
+// DTO usado para actualizar parcialmente un AdminRecord (PATCH)
+export interface AdminRecordsPatchDTO {
+  status?: Status | undefined;
+  projects?: string | undefined; 
+  currently?: Currently | undefined;
+  ciudad?: string | undefined;
+  accessTo?: string | undefined; 
+  orgNotes?: string | undefined;
+  bookingLink?: string | undefined;
+  portfolio?: string | undefined;
+  oneToOneNotes?: string | undefined;
+  projectInterview?: string | undefined;
+  notas?: string | undefined;
+  additionalAdmin1?: string | undefined;
+  additionalAdmin2?: string | undefined;
+  additionalAdmin3?: string | undefined;
+  additionalAdmin4?: string | undefined;
+  additionalAdmin5?: string | undefined;
+  additionalJson?: Record<string, unknown> | undefined;
+}
+
+// DTO usado para actualizar completamente un AdminRecord (PUT)
+export interface AdminRecordsUpdateDTO {
+  status?: Status;
+  projects?: string; 
+  currently?: Currently;
+  ciudad?: string;
+  accessTo?: string; 
+  orgNotes?: string;
+  bookingLink?: string;
+  portfolio?: string;
+  oneToOneNotes?: string;
+  projectInterview?: string;
+  notas?: string;
+  additionalAdmin1?: string;
+  additionalAdmin2?: string;
+  additionalAdmin3?: string;
+  additionalAdmin4?: string;
+  additionalAdmin5?: string;
+  additionalJson?: Record<string, unknown>;
+}
+
+// =========================
+// TIPOS AUXILIARES
+// =========================
+
+// Tipo para los Long de Java (usar number en JS pero documentado como Long)
+export type Long = number;
+
+// Opciones disponibles para projects y accessTo
+export const ProjectsOptions = [
+  "New Data Infra",
+  "Teaser Page", 
+  "Visitor's Website",
+  "Design System",
+  "Data Infra"
+];
+
+export const AccessToOptions = [
+  "Notion",
+  "Discord", 
+  "Figma",
+  "GitHub"
+];
+
+// Helper functions para convertir entre CSV y arrays
+export const csvToArray = (csv?: string): string[] => {
+  if (!csv || csv.trim() === '') return [];
+  return csv.split(',').map(item => item.trim()).filter(item => item.length > 0);
+};
+
+export const arrayToCsv = (array: string[]): string => {
+  return array.join(',');
+};
