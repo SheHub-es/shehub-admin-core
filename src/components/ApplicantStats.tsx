@@ -36,7 +36,6 @@ import {
   getLanguageDisplayName,
 } from "../features/types/applicant";
 
-// Registrar componentes de Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -132,10 +131,8 @@ export const ApplicantStats = forwardRef<
       setLoading(true);
       setError(null);
 
-      // Cargar estadísticas básicas
       const basicStats = await applicantApi.getStats();
 
-      // Cargar estadísticas por idioma
       const languages = Object.values(Language);
       const languageStats: Record<string, number> = {};
 
@@ -150,7 +147,6 @@ export const ApplicantStats = forwardRef<
         })
       );
 
-      // Cargar applicants eliminados para el conteo
       const deletedApplicants = await applicantApi.getDeleted();
       const totalDeleted = deletedApplicants.length;
 
@@ -221,7 +217,6 @@ export const ApplicantStats = forwardRef<
     return null;
   }
 
-  // Datos para el gráfico de barras de idiomas
   const languageChartData = {
     labels: Object.entries(stats.byLanguage)
       .sort(([, a], [, b]) => b - a)
@@ -247,7 +242,6 @@ export const ApplicantStats = forwardRef<
     ],
   };
 
-  // Datos para el gráfico de dona de distribución
   const distributionChartData = {
     labels: ["Mentores", "Colaboradoras", "Pendientes"],
     datasets: [
@@ -407,7 +401,6 @@ export const ApplicantStats = forwardRef<
 
   return (
     <div className="space-y-8 fade-in">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-neutral-900 flex items-center mb-2">
@@ -420,7 +413,6 @@ export const ApplicantStats = forwardRef<
         </div>
       </div>
 
-      {/* Tarjetas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatsCard
           title="Total Applicants"
@@ -459,9 +451,7 @@ export const ApplicantStats = forwardRef<
         />
       </div>
 
-      {/* Gráficos principales */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Gráfico de barras - Distribución por idioma */}
         <div className="bg-white p-6 rounded-lg shadow-lg fade-in delay-200">
           <h3 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center">
             <Globe className="h-5 w-5 mr-2 text-white" />
@@ -472,7 +462,6 @@ export const ApplicantStats = forwardRef<
           </div>
         </div>
 
-        {/* Gráfico de dona - Tipos de applicants */}
         <div className="bg-white p-6 rounded-lg shadow-lg fade-in delay-400">
           <h3 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center">
             <Activity className="h-5 w-5 mr-2 text-white" />
@@ -500,9 +489,7 @@ export const ApplicantStats = forwardRef<
         </div>
       </div>
 
-      {/* Panel de métricas detalladas */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Métricas de rendimiento */}
         <div className="bg-white p-6 rounded-lg shadow-lg fade-in delay-600">
           <h3 className="text-lg font-semibold text-neutral-900 mb-6 flex items-center">
             <TrendingUp className="h-5 w-5 mr-2 text-white" />
@@ -538,7 +525,6 @@ export const ApplicantStats = forwardRef<
           </div>
         </div>
 
-        {/* Idioma principal */}
         <div className="bg-white p-6 rounded-lg shadow-lg fade-in delay-700">
           <h3 className="text-lg font-semibold text-neutral-900 mb-6">
             Idioma Dominante
@@ -566,7 +552,6 @@ export const ApplicantStats = forwardRef<
           </div>
         </div>
 
-        {/* Resumen rápido */}
         <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-lg border border-purple-100 fade-in delay-800">
           <h3 className="text-lg font-semibold text-neutral-900 mb-4">
             Resumen Ejecutivo

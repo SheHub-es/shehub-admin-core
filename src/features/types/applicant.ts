@@ -1,5 +1,3 @@
-// types/applicant.ts
-
 export enum Language {
   ES = "ES",
   EN = "EN",
@@ -8,7 +6,6 @@ export enum Language {
   EN_US = "EN_US",
 }
 
-// Helper function to get display names
 export const getLanguageDisplayName = (language: Language): string => {
   switch (language) {
     case Language.ES:
@@ -126,8 +123,6 @@ export interface ApplicantExtendedStatsDto extends ApplicantStatsDto {
   topRoles: Array<{ role: string; count: number }>;
 }
 
-// ApplicantProfile types and interfaces
-
 export enum Disponibilidad {
   LT5 = "LT5",
   B5_10 = "B5_10",
@@ -135,7 +130,6 @@ export enum Disponibilidad {
   GT15 = "GT15",
 }
 
-// Helper function para obtener nombres legibles de disponibilidad
 export const getDisponibilidadDisplayName = (
   disponibilidad: Disponibilidad
 ): string => {
@@ -153,7 +147,6 @@ export const getDisponibilidadDisplayName = (
   }
 };
 
-// Roles deseados predefinidos
 export const DESIRED_ROLES = [
   "Backend Developer",
   "Frontend Developer",
@@ -187,7 +180,6 @@ export interface ApplicantProfile {
   applicantId?: number;
 }
 
-// DTO para crear perfil
 export interface CreateApplicantProfileDto {
   linkedInProfile: string;
   githubProfile?: string;
@@ -199,7 +191,6 @@ export interface CreateApplicantProfileDto {
   applicantId: number;
 }
 
-// DTO para actualizar perfil
 export interface UpdateApplicantProfileDto {
   linkedInProfile?: string | undefined;
   githubProfile?: string | undefined;
@@ -210,7 +201,6 @@ export interface UpdateApplicantProfileDto {
   bootcamp?: string | undefined;
 }
 
-// DTO de respuesta del backend
 export interface ApplicantProfileResponseDto {
   id: number;
   linkedInProfile: string;
@@ -223,7 +213,6 @@ export interface ApplicantProfileResponseDto {
   applicantId: number;
 }
 
-// Formulario para editar perfil (frontend)
 export interface ApplicantProfileFormData {
   linkedInProfile: string;
   githubProfile: string;
@@ -240,7 +229,6 @@ export interface ApplicantProfileFormData {
   additionalData: Record<string, unknown>;
 }
 
-// Estado inicial del formulario
 export const initialApplicantProfileFormData: ApplicantProfileFormData = {
   linkedInProfile: "",
   githubProfile: "",
@@ -257,7 +245,6 @@ export const initialApplicantProfileFormData: ApplicantProfileFormData = {
   additionalData: {},
 };
 
-// Errores de validación del perfil
 export interface ApplicantProfileValidationErrors {
   linkedInProfile?: string;
   githubProfile?: string;
@@ -273,7 +260,6 @@ export interface ApplicantProfileValidationErrors {
   extraField5?: string;
 }
 
-// Utilidad para convertir FormData a DTO - CORREGIDA
 export const formDataToUpdateDto = (
   formData: ApplicantProfileFormData
 ): UpdateApplicantProfileDto => ({
@@ -286,7 +272,6 @@ export const formDataToUpdateDto = (
   bootcamp: formData.bootcamp || undefined,
 });
 
-// Utilidad para convertir respuesta del backend a FormData
 export const profileToFormData = (
   profile: ApplicantProfile
 ): ApplicantProfileFormData => ({
@@ -305,7 +290,6 @@ export const profileToFormData = (
   additionalData: profile.additionalData || {},
 });
 
-// Validador simple para LinkedIn URL
 export const validateLinkedInUrl = (url: string): boolean => {
   if (!url) return false;
   const linkedInRegex =
@@ -313,17 +297,12 @@ export const validateLinkedInUrl = (url: string): boolean => {
   return linkedInRegex.test(url);
 };
 
-// Validador simple para GitHub URL
 export const validateGitHubUrl = (url: string): boolean => {
   if (!url) return true;
   const githubRegex =
     /^https?:\/\/(www\.)?github\.com\/[\w\-._~:/?#[\]@!$&'()*+,;=]+$/;
   return githubRegex.test(url);
 };
-
-// =========================
-// ENUMS (basados en el backend)
-// =========================
 
 export enum Status {
   AP = "AP", // "Assigned to a Project"
@@ -333,7 +312,7 @@ export enum Status {
   NN = "NN", // "To revisit – Not for now"
   CP = "CP", // "Completed Participation"
   BR = "BR", // "To be reached"
-  CC = "CC"  // "Canceled communications"
+  CC = "CC", // "Canceled communications"
 }
 
 export enum Currently {
@@ -342,10 +321,9 @@ export enum Currently {
   UE = "UE", // "Unemployed"
   FB = "FB", // "Finishing bootcamp"
   FL = "FL", // "Freelancing"
-  PT = "PT"  // "Working part-time"
+  PT = "PT", // "Working part-time"
 }
 
-// Mapas de display para mostrar en la UI
 export const StatusDisplay: Record<Status, string> = {
   [Status.AP]: "Assigned to a Project",
   [Status.NE]: "Not engaged",
@@ -354,7 +332,7 @@ export const StatusDisplay: Record<Status, string> = {
   [Status.NN]: "To revisit – Not for now",
   [Status.CP]: "Completed Participation",
   [Status.BR]: "To be reached",
-  [Status.CC]: "Canceled communications"
+  [Status.CC]: "Canceled communications",
 };
 
 export const CurrentlyDisplay: Record<Currently, string> = {
@@ -363,32 +341,24 @@ export const CurrentlyDisplay: Record<Currently, string> = {
   [Currently.UE]: "Unemployed",
   [Currently.FB]: "Finishing bootcamp",
   [Currently.FL]: "Freelancing",
-  [Currently.PT]: "Working part-time"
+  [Currently.PT]: "Working part-time",
 };
 
-
-// =========================
-// DTOs
-// =========================
-
-// DTO que representa una referencia mínima de un Applicant
 export interface ApplicantRefDTO {
-  id: Long; // ✅ Cambiado de number a Long
+  id: Long;
   email?: string;
   firstName?: string;
   lastName?: string;
 }
 
-// DTO usado para opciones múltiples asociadas a un AdminRecord
 export interface AdminRecordsMultiOptionDTO {
   title: string;
   link?: string;
 }
 
-// DTO usado para crear un nuevo AdminRecord desde el frontend
 export interface AdminRecordsCreateDTO {
   status: Status;
-  projects?: string; 
+  projects?: string;
   currently?: Currently;
   ciudad?: string;
   accessTo?: string;
@@ -398,7 +368,7 @@ export interface AdminRecordsCreateDTO {
   oneToOneNotes?: string;
   projectInterview?: string;
   notas?: string;
-  applicantId: Long; 
+  applicantId: Long;
   additionalAdmin1?: string;
   additionalAdmin2?: string;
   additionalAdmin3?: string;
@@ -407,9 +377,8 @@ export interface AdminRecordsCreateDTO {
   additionalJson?: Record<string, unknown>;
 }
 
-// DTO que representa un AdminRecord completo, usado para obtener detalles
 export interface AdminRecordsDetailDTO {
-  id: Long; 
+  id: Long;
   applicant?: ApplicantRefDTO;
   status?: Status;
   currently?: Currently;
@@ -420,8 +389,8 @@ export interface AdminRecordsDetailDTO {
   oneToOneNotes?: string;
   projectInterview?: string;
   notas?: string;
-  projects?: AdminRecordsMultiOptionDTO[]; 
-  accessTo?: AdminRecordsMultiOptionDTO[]; 
+  projects?: AdminRecordsMultiOptionDTO[];
+  accessTo?: AdminRecordsMultiOptionDTO[];
   additionalAdmin1?: string;
   additionalAdmin2?: string;
   additionalAdmin3?: string;
@@ -430,9 +399,8 @@ export interface AdminRecordsDetailDTO {
   additionalJson?: Record<string, unknown>;
 }
 
-// DTO para listar AdminRecords en tablas o listados, con datos resumidos
 export interface AdminRecordsListItemDTO {
-  id: Long; 
+  id: Long;
   applicant?: ApplicantRefDTO;
   status?: Status;
   projects?: AdminRecordsMultiOptionDTO[];
@@ -442,13 +410,12 @@ export interface AdminRecordsListItemDTO {
   portfolio?: string;
 }
 
-// DTO usado para actualizar parcialmente un AdminRecord (PATCH)
 export interface AdminRecordsPatchDTO {
   status?: Status | undefined;
-  projects?: string | undefined; 
+  projects?: string | undefined;
   currently?: Currently | undefined;
   ciudad?: string | undefined;
-  accessTo?: string | undefined; 
+  accessTo?: string | undefined;
   orgNotes?: string | undefined;
   bookingLink?: string | undefined;
   portfolio?: string | undefined;
@@ -463,13 +430,12 @@ export interface AdminRecordsPatchDTO {
   additionalJson?: Record<string, unknown> | undefined;
 }
 
-// DTO usado para actualizar completamente un AdminRecord (PUT)
 export interface AdminRecordsUpdateDTO {
   status?: Status;
-  projects?: string; 
+  projects?: string;
   currently?: Currently;
   ciudad?: string;
-  accessTo?: string; 
+  accessTo?: string;
   orgNotes?: string;
   bookingLink?: string;
   portfolio?: string;
@@ -484,35 +450,26 @@ export interface AdminRecordsUpdateDTO {
   additionalJson?: Record<string, unknown>;
 }
 
-// =========================
-// TIPOS AUXILIARES
-// =========================
-
-// Tipo para los Long de Java (usar number en JS pero documentado como Long)
 export type Long = number;
 
-// Opciones disponibles para projects y accessTo
 export const ProjectsOptions = [
   "New Data Infra",
-  "Teaser Page", 
+  "Teaser Page",
   "Visitor's Website",
   "Design System",
-  "Data Infra"
+  "Data Infra",
 ];
 
-export const AccessToOptions = [
-  "Notion",
-  "Discord", 
-  "Figma",
-  "GitHub"
-];
+export const AccessToOptions = ["Notion", "Discord", "Figma", "GitHub"];
 
-// Helper functions para convertir entre CSV y arrays
 export const csvToArray = (csv?: string): string[] => {
-  if (!csv || csv.trim() === '') return [];
-  return csv.split(',').map(item => item.trim()).filter(item => item.length > 0);
+  if (!csv || csv.trim() === "") return [];
+  return csv
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
 };
 
 export const arrayToCsv = (array: string[]): string => {
-  return array.join(',');
+  return array.join(",");
 };

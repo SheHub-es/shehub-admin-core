@@ -18,7 +18,7 @@ The main purpose of this dashboard is to provide the **administrator** and the *
 
 You can access the current production version here:
 
-[https://shehub-admin-core.vercel.app/applicants](https://shehub-admin-core.vercel.app/applicants)
+[https://shehub-admin-core.vercel.app](https://shehub-admin-core.vercel.app)
 
 ---
 
@@ -149,4 +149,3 @@ Contributions are welcome! Follow these steps:
 * [Official Next.js Documentation](https://nextjs.org/docs)
 * [Interactive Next.js Tutorial](https://nextjs.org/learn)
 * [Next.js GitHub Repository](https://github.com/vercel/next.js)
-

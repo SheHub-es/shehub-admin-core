@@ -216,7 +216,6 @@
   --color-button-disabled-border: #d1d1d1;
 
   --color-button-bg-gradient: var(--color-gradient-brand);
-  /* To use it for example in the navbar button (which is the case for now) this is the way to apply it in the className "bg-[image:var(--color-button-bg-gradient)]"
 
   /* Toggle */
   --color-toggle-bg-default: #f5f5f5;

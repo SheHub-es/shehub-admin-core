@@ -116,7 +116,6 @@ export function ApplicantForm({
 
   return (
     <div className="bg-white rounded-lg shadow-lg overflow-hidden fade-in">
-      {/* Header */}
       <div className="bg-gradient-to-r from-purple-600 to-pink-600 px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
@@ -141,7 +140,6 @@ export function ApplicantForm({
         </div>
       </div>
 
-      {/* Form */}
       <form onSubmit={handleSubmit} className="p-6 space-y-6">
         {mode === "create" && (
           <div className="space-y-2">
@@ -220,7 +218,6 @@ export function ApplicantForm({
             )}
           </div>
 
-          {/* Apellido */}
           <div className="space-y-2">
             <label
               htmlFor="lastName"
@@ -296,7 +293,6 @@ export function ApplicantForm({
           </div>
         </div>
 
-        {/* Tipo de Applicant */}
         <div className="space-y-3">
           <label className="flex items-center gap-2 text-sm font-semibold text-neutral-700">
             <UserCheck className="h-4 w-4 text-purple-600" />
@@ -346,7 +342,6 @@ export function ApplicantForm({
           </div>
         </div>
 
-        {/* Roles Profesionales */}
         <div className="space-y-3">
           <label
             htmlFor="roles"
@@ -379,7 +374,6 @@ export function ApplicantForm({
           </div>
         </div>
 
-        {/* Botones de acción */}
         <div className="flex justify-end gap-3 pt-6 border-t border-neutral-200">
           <button
             type="button"

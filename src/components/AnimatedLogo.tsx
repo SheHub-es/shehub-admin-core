@@ -11,7 +11,6 @@ import {
   useState,
 } from "react";
 
-// Registrar el plugin de texto
 gsap.registerPlugin(TextPlugin);
 
 interface AnimatedLogoProps {
@@ -37,14 +36,12 @@ export default function AnimatedLogo({
 
   const [shouldSkip, setShouldSkip] = useState(false);
 
-  // Textos para typewriter
   const texts = [
     "Construyendo comunidad",
     "Empoderando mujeres",
     "Creando futuro",
   ];
 
-  // Reduce motion / skip
   useEffect(() => {
     const reduced =
       typeof window !== "undefined"
@@ -162,7 +159,6 @@ export default function AnimatedLogo({
             }
           );
 
-          // Estados iniciales
           gsap.set(textLines, {
             autoAlpha: 0,
             y: 25,
@@ -170,7 +166,6 @@ export default function AnimatedLogo({
             rotationX: 5,
           });
 
-          // Configuración inicial para typewriter - textos vacíos
           textLines.forEach((line, i) => {
             line.textContent = "";
             line.setAttribute("data-text", texts[i]);
@@ -184,7 +179,6 @@ export default function AnimatedLogo({
           tlRef.current = tl;
           tl.eventCallback("onComplete", onAnimationComplete);
 
-          // 1) ENTRADA LOGO
           tl.fromTo(
             logoRef.current,
             {
@@ -203,7 +197,6 @@ export default function AnimatedLogo({
             0
           )
 
-            // Resplandor sutil del logo
             .to(
               glowRef.current,
               {
@@ -214,8 +207,6 @@ export default function AnimatedLogo({
               },
               DUR.logoIn * 0.4
             )
-
-            // Asentamiento suave con respiración
             .to(
               logoRef.current,
               {
@@ -226,7 +217,6 @@ export default function AnimatedLogo({
               DUR.logoIn
             )
 
-            // Respiración muy sutil del logo
             .to(
               logoRef.current,
               {
@@ -239,7 +229,6 @@ export default function AnimatedLogo({
               DUR.logoIn + DUR.settle
             );
 
-          // 2) ENTRADA TEXTOS CON TYPEWRITER
           tl.to(
             textLines,
             {
@@ -257,7 +246,6 @@ export default function AnimatedLogo({
             DUR.logoIn + 0.2
           );
 
-          // Efecto typewriter para cada texto
           textLines.forEach((line, i) => {
             const text = texts[i];
             tl.to(
@@ -274,7 +262,6 @@ export default function AnimatedLogo({
             );
           });
 
-          // 3) Líneas decorativas originales
           tl.to(
             q(".network-line"),
             {
@@ -291,7 +278,6 @@ export default function AnimatedLogo({
             ">-0.4"
           );
 
-          // 4) LÍNEAS DE COMUNIDAD
           tl.to(
             communityLinesRef.current,
             {
@@ -300,33 +286,27 @@ export default function AnimatedLogo({
               ease: "power2.out",
             },
             ">-0.2"
-          )
-
-            // Líneas de conexión aparecen una por una
-            .to(
-              q(".community-line"),
-              {
-                scaleX: 1,
-                autoAlpha: 1,
-                duration: DUR.communityLines,
-                stagger: {
-                  amount: 0.4,
-                  from: "center",
-                  ease: "power2.out",
-                },
-                transformOrigin: "center center",
+          ).to(
+            q(".community-line"),
+            {
+              scaleX: 1,
+              autoAlpha: 1,
+              duration: DUR.communityLines,
+              stagger: {
+                amount: 0.4,
+                from: "center",
                 ease: "power2.out",
               },
-              ">-0.1"
-            );
+              transformOrigin: "center center",
+              ease: "power2.out",
+            },
+            ">-0.1"
+          );
 
-          // 5) PAUSA contemplativa
           tl.to({}, { duration: DUR.pause }, ">+0.2");
 
-          // 6) SALIDA elegante y fluida - TEXTOS Y LÍNEAS JUNTOS
           tl.addLabel("explode");
 
-          // Logo: crecimiento y desvanecimiento suave
           tl.to(
             logoRef.current,
             {
@@ -339,7 +319,6 @@ export default function AnimatedLogo({
             "explode"
           );
 
-          // Resplandor se desvanece
           tl.to(
             glowRef.current,
             {
@@ -351,7 +330,6 @@ export default function AnimatedLogo({
             "explode"
           );
 
-          // Textos: EXPANSIÓN POR TODA LA PANTALLA - más fluido y posicionado
           tl.to(
             textLines,
             {
@@ -400,7 +378,6 @@ export default function AnimatedLogo({
             "explode+0.05"
           );
 
-          // Contenedores de líneas también se expanden
           tl.to(
             [linesRef.current, communityLinesRef.current],
             {
@@ -412,7 +389,6 @@ export default function AnimatedLogo({
             "explode+0.05"
           );
 
-          // 7) Fade final del contenedor
           tl.to(
             containerRef.current,
             {
@@ -449,7 +425,6 @@ export default function AnimatedLogo({
       aria-label="Introducción animada"
       style={{ visibility: "hidden" }}
     >
-      {/* Skip Button */}
       <button
         onClick={(e) => (e.shiftKey ? hardSkip() : softSkip())}
         ref={skipBtnRef}
@@ -463,20 +438,16 @@ export default function AnimatedLogo({
         </span>
       </button>
 
-      {/* Resplandor sutil del logo */}
       <div ref={glowRef} className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-gradient-radial from-purple-200/40 via-pink-100/20 to-transparent rounded-full blur-2xl" />
       </div>
 
-      {/* Líneas decorativas originales */}
       <div ref={linesRef} className="absolute inset-0 pointer-events-none">
         <div className="network-line absolute top-1/4 left-0 w-36 h-px bg-gradient-to-r from-transparent via-purple-400/60 to-transparent rotate-12 scale-x-0" />
         <div className="network-line absolute top-1/2 right-0 w-28 h-px bg-gradient-to-r from-transparent via-pink-400/60 to-transparent -rotate-12 scale-x-0" />
         <div className="network-line absolute bottom-1/3 left-1/4 w-32 h-px bg-gradient-to-r from-transparent via-orange-400/60 to-transparent rotate-45 scale-x-0" />
         <div className="network-line absolute top-1/3 right-1/4 w-24 h-px bg-gradient-to-r from-transparent via-purple-500/60 to-transparent -rotate-45 scale-x-0" />
       </div>
-
-      {/* LÍNEAS DE COMUNIDAD */}
       <div
         ref={communityLinesRef}
         className="absolute inset-0 pointer-events-none"
@@ -521,7 +492,6 @@ export default function AnimatedLogo({
         />
       </div>
 
-      {/* Contenido principal */}
       <div className="text-center space-y-10 -mt-20">
         <div
           ref={logoRef}
@@ -538,7 +508,6 @@ export default function AnimatedLogo({
         </div>
 
         <div ref={textWrapperRef} className="space-y-5 will-change-transform">
-          {/* TEXTOS CON EFECTO 3D SUTIL Y TYPEWRITER */}
           <p
             className="typewriter-text text-purple-600 font-secondary text-xl md:text-2xl font-medium tracking-wide"
             style={{
@@ -566,7 +535,6 @@ export default function AnimatedLogo({
         </div>
       </div>
 
-      {/* Partículas minimalistas */}
       <div className="absolute inset-0 pointer-events-none hidden md:block">
         <div className="absolute w-2.5 h-2.5 bg-purple-300/50 rounded-full top-1/4 left-1/3 animate-pulse backdrop-blur-sm" />
         <div

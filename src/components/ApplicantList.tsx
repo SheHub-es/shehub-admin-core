@@ -8,7 +8,7 @@ import {
   Eye,
   Calendar,
   Mail,
-  Settings, 
+  Settings,
 } from "lucide-react";
 import {
   ApplicantListItemDto,
@@ -27,7 +27,6 @@ interface ApplicantListProps {
   emptyLabel?: string;
 }
 
-// Tipado fuerte: clave del record es el enum Language
 const languageLabels: Record<Language, string> = {
   [Language.ES]: getLanguageDisplayName(Language.ES),
   [Language.EN]: getLanguageDisplayName(Language.EN),
@@ -36,14 +35,12 @@ const languageLabels: Record<Language, string> = {
   [Language.EN_US]: getLanguageDisplayName(Language.EN_US),
 };
 
-// Función para obtener las iniciales del nombre
 const getInitials = (firstName: string, lastName: string): string => {
   const firstInitial = firstName?.charAt(0)?.toUpperCase() || "";
   const lastInitial = lastName?.charAt(0)?.toUpperCase() || "";
   return `${firstInitial}${lastInitial}`;
 };
 
-// Función para obtener colores del avatar basado en el nombre
 const getAvatarColors = (name: string) => {
   const colors = [
     {
@@ -277,7 +274,6 @@ export function ApplicantList({
                     </div>
                   </td>
 
-                  {/* CELDA PERFIL */}
                   <td className="px-6 py-3 whitespace-nowrap">
                     {onViewProfile && (
                       <button
@@ -291,7 +287,6 @@ export function ApplicantList({
                     )}
                   </td>
 
-                  {/* NUEVA CELDA ADMIN RECORD */}
                   <td className="px-6 py-3 whitespace-nowrap">
                     {onViewAdminRecord && (
                       <button
@@ -318,7 +313,6 @@ export function ApplicantList({
                         </button>
                       )}
 
-                      {/* Si no está eliminado -> botón Editar */}
                       {!applicant.deleted && (
                         <button
                           onClick={() => onEdit(applicant)}
@@ -330,7 +324,6 @@ export function ApplicantList({
                         </button>
                       )}
 
-                      {/* Si está eliminado -> botón Restaurar; si no, Eliminar */}
                       {applicant.deleted ? (
                         onRestore && (
                           <button
@@ -362,7 +355,6 @@ export function ApplicantList({
         </table>
       </div>
 
-      {/* Footer informativo */}
       <div className="bg-neutral-50 px-6 py-3 border-t border-neutral-200">
         <div className="flex items-center justify-between text-sm text-neutral-600">
           <span>

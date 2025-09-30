@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from 'react';
 import { ApiClientError, applicantApi } from '../lib/applicants';
 import { ApplicantStatsDto } from '../types/applicant';
@@ -33,7 +32,6 @@ export function useApplicantStats(): UseApplicantStatsResult {
       setLoading(true);
       setError(null);
       
-      // Obtener estadísticas básicas y por idioma en paralelo
       const [basicStats, languageStats, deletedApplicants] = await Promise.all([
         applicantApi.getStats(),
         applicantApi.getStatsByLanguage(),

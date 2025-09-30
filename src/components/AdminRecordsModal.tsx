@@ -26,7 +26,6 @@ import {
   StatusDisplay,
 } from "../features/types/applicant";
 
-// Modal base component
 function ModalBase({
   isOpen,
   onClose,
@@ -89,7 +88,6 @@ function ModalBase({
   );
 }
 
-// Props del modal específico para applicant
 export interface AdminRecordsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -97,7 +95,6 @@ export interface AdminRecordsModalProps {
   onRecordSaved?: (record: AdminRecordsDetailDTO) => void;
 }
 
-// Tipos para los formularios
 interface CreateFormData {
   status: Status;
   projects: string[];
@@ -158,7 +155,6 @@ export default function AdminRecordsModal({
   const [createForm, setCreateForm] = useState<CreateFormData>(emptyCreateForm);
   const [editForm, setEditForm] = useState<EditFormData | null>(null);
 
-  // Resetear estados cuando cambia el applicant
   useEffect(() => {
     if (applicant && isOpen) {
       setMode("view");
@@ -320,7 +316,6 @@ export default function AdminRecordsModal({
 
   const renderViewMode = () => (
     <div className="space-y-6">
-      {/* Header del Applicant */}
       <div className="flex items-center gap-4">
         <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white text-lg font-bold shadow-lg">
           {applicant.firstName?.charAt(0)}
@@ -381,8 +376,6 @@ export default function AdminRecordsModal({
               </span>
             </div>
           </div>
-
-          {/* Proyectos */}
           <div className="bg-white border border-neutral-200 rounded-lg p-4">
             <h5 className="font-semibold text-neutral-900 mb-3">
               Proyectos Asignados
@@ -414,7 +407,6 @@ export default function AdminRecordsModal({
             )}
           </div>
 
-          {/* Accesos */}
           {adminRecord.accessTo && adminRecord.accessTo.length > 0 && (
             <div className="bg-white border border-neutral-200 rounded-lg p-4">
               <h5 className="font-semibold text-neutral-900 mb-3">Accesos</h5>
@@ -440,7 +432,6 @@ export default function AdminRecordsModal({
             </div>
           )}
 
-          {/* Notas y enlaces */}
           <div className="grid md:grid-cols-2 gap-4">
             {adminRecord.orgNotes && (
               <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-4">
@@ -506,7 +497,6 @@ export default function AdminRecordsModal({
             )}
           </div>
 
-          {/* Botones de acción */}
           <div className="flex justify-end pt-6 border-t border-neutral-200">
             <button
               onClick={startEdit}
@@ -518,7 +508,6 @@ export default function AdminRecordsModal({
           </div>
         </div>
       ) : (
-        // No tiene AdminRecord
         <div className="text-center py-12 bg-neutral-50 border border-neutral-200 rounded-xl">
           <Users className="h-12 w-12 text-neutral-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-neutral-900 mb-2">
@@ -780,7 +769,6 @@ export default function AdminRecordsModal({
     </div>
   );
 
-  // Renderizar formulario de edición (similar al crear pero pre-poblado)
   const renderEditForm = () => {
     if (!editForm || !adminRecord) return null;
 

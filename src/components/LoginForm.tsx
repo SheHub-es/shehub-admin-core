@@ -22,7 +22,6 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
     else if (!/\S+@\S+\.\S+/.test(formData.email))
       newErrors.email = "Email no válido";
 
-    // El backend exige mínimo 8 caracteres
     if (!formData.password) newErrors.password = "La contraseña es requerida";
     else if (formData.password.length < 8)
       newErrors.password = "La contraseña debe tener al menos 8 caracteres";
@@ -37,18 +36,15 @@ export default function LoginForm({ onRestart }: LoginFormProps) {
     setIsLoading(true);
 
     try {
- const baseUrl = process.env.NEXT_PUBLIC_API_URL || '';
-const res = await fetch(`${baseUrl}/auth/admin/login`, {
-
-
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({
-    email: formData.email,
-    password: formData.password,
-  }),
-});
-
+      const baseUrl = process.env.NEXT_PUBLIC_API_URL || "";
+      const res = await fetch(`${baseUrl}/auth/admin/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
       const data = await res.json().catch(() => ({}));
 
@@ -59,10 +55,8 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
         throw new Error(msg);
       }
 
-      // Guardamos el JWT (rápido). Si luego quieres httpOnly cookie, lo cambiamos.
       localStorage.setItem("shehub_token", data.token);
 
-      // Redirige al panel
       router.push("/applicants");
     } catch (err: unknown) {
       let errorMessage = "Credenciales inválidas o sin acceso";
@@ -82,7 +76,6 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
 
-
     if (errors[name as keyof typeof errors]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
@@ -90,9 +83,7 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
 
   return (
     <div className="min-h-screen flex">
-      {/* Panel izquierdo - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-[image:var(--color-gradient-brand)] p-12 flex-col justify-between relative overflow-hidden">
-        {/* Patrón de fondo decorativo mejorado */}
         <div className="absolute inset-0 opacity-10">
           <div
             className="absolute top-20 left-20 w-64 h-64 rounded-full border border-white/30 animate-pulse"
@@ -138,7 +129,6 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
               <strong className="text-white">Tu impacto empieza aquí.</strong>
             </p>
 
-            {/* Lista de beneficios */}
             <div className="space-y-3 fade-in delay-600">
               <div className="flex items-center gap-3 text-white/90">
                 <CheckCircle className="w-5 h-5 text-green-300" />
@@ -184,10 +174,8 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
         </div>
       </div>
 
-      {/* Panel derecho - Formulario */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-[var(--color-background-light)]">
         <div className="w-full max-w-md fade-in delay-200">
-          {/* Logo móvil */}
           <div className="lg:hidden mb-8 text-center">
             <Image
               src="/images/logo-shehub.png"
@@ -198,7 +186,6 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
             />
           </div>
 
-          {/* Header */}
           <div className="mb-8">
             <h2 className="text-[var(--text-size-700)] font-[var(--font-weight-heavy)] mb-2 text-[var(--color-foreground)]">
               Iniciar Sesión
@@ -208,9 +195,7 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
             </p>
           </div>
 
-          {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Campo Email */}
             <div>
               <label
                 htmlFor="email"
@@ -254,7 +239,6 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
               )}
             </div>
 
-            {/* Campo Password */}
             <div>
               <label
                 htmlFor="password"
@@ -309,7 +293,6 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
               )}
             </div>
 
-            {/* Recordar y Recuperar */}
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <input
@@ -332,21 +315,19 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
                 ¿Olvidaste tu contraseña?
               </button>
             </div>
-
-            {/* Botón Submit */}
             <button
               type="submit"
               disabled={isLoading}
               className={`w-full flex justify-center items-center gap-2 py-3 px-4 rounded-lg font-medium transition-all duration-200 text-[var(--text-size-300)]
-                ${
-                  isLoading
-                    ? "bg-[var(--color-button-disabled-bg)] text-[var(--color-button-disabled-text)] cursor-not-allowed"
-                    : "bg-[var(--color-button-primary-primary-bg-default)] text-[var(--color-button-primary-primary-text)] hover:bg-[var(--color-button-primary-primary-bg-hover)] hover:text-[var(--color-button-primary-primary-text-hover)] hover:shadow-[var(--color-card-shadow-hover)] transform hover:scale-[1.02]"
-                }`}
+    ${
+      isLoading
+        ? "bg-[var(--color-button-disabled-bg)] cursor-not-allowed"
+        : "bg-[var(--color-button-primary-primary-bg-default)] hover:bg-[var(--color-button-primary-primary-bg-hover)] hover:shadow-[var(--color-card-shadow-hover)] transform hover:scale-[1.02]"
+    } text-white`}
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-current" />
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
                   <span>Iniciando sesión...</span>
                 </>
               ) : (
@@ -358,7 +339,6 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
             </button>
           </form>
 
-          {/* Footer */}
           <div className="mt-8 pt-6 border-t border-neutral-200">
             <p className="text-center text-[var(--text-size-200)] text-[var(--color-muted)]">
               ¿No tienes cuenta?{" "}
@@ -368,7 +348,6 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
             </p>
           </div>
 
-          {/* Botón de desarrollo - Reiniciar animación */}
           {onRestart && (
             <div className="mt-6 pt-4 border-t border-neutral-200">
               <button
@@ -384,4 +363,3 @@ const res = await fetch(`${baseUrl}/auth/admin/login`, {
     </div>
   );
 }
-

@@ -1,4 +1,3 @@
-// hooks/useApplicantFilters.ts
 import { useMemo, useState } from "react";
 import { ApplicantListItemDto, Language } from "../types/applicant";
 
@@ -10,22 +9,17 @@ interface ApplicantFilters {
 }
 
 interface UseApplicantFiltersResult {
-  // Estados de filtros
   filters: ApplicantFilters;
 
-  // Setters individuales
   setSearchTerm: (term: string) => void;
   setLanguageFilter: (filter: Language | "all") => void;
   setMentorFilter: (filter: "all" | "mentor" | "colaboradora") => void;
   setStatusFilter: (filter: "all" | "active" | "deleted") => void;
 
-  // Función para limpiar todos los filtros
   clearAllFilters: () => void;
 
-  // Función para aplicar filtros a una lista de applicants
   applyFilters: (applicants: ApplicantListItemDto[]) => ApplicantListItemDto[];
 
-  // Función auxiliar para verificar si hay filtros activos
   hasActiveFilters: boolean;
 }
 
@@ -66,25 +60,21 @@ export function useApplicantFilters(
     const q = searchTerm.toLowerCase();
 
     return applicants.filter((applicant) => {
-      // Filtro de búsqueda por texto
       const matchesSearch =
         q === "" ||
         applicant.firstName.toLowerCase().includes(q) ||
         applicant.lastName.toLowerCase().includes(q) ||
         applicant.email.toLowerCase().includes(q);
 
-      // Filtro por idioma
       const matchesLanguage =
         languageFilter === "all" ||
         applicant.language === (languageFilter as Language);
 
-      // Filtro por tipo (mentor/colaboradora)
       const matchesMentor =
         mentorFilter === "all" ||
         (mentorFilter === "mentor" && applicant.mentor) ||
         (mentorFilter === "colaboradora" && !applicant.mentor);
 
-      // Filtro por estado (activo/eliminado/todos)
       const matchesStatus =
         statusFilter === "all" ||
         (statusFilter === "active" && !applicant.deleted) ||
@@ -106,7 +96,6 @@ export function useApplicantFilters(
   };
 }
 
-// Hook adicional para obtener información de filtros aplicados
 export function useFilterSummary(
   filters: ApplicantFilters,
   filteredCount: number,

@@ -202,16 +202,13 @@ export default function Page() {
   const pathname = usePathname();
   const statsRef = useRef<ApplicantStatsRef>(null);
 
-  // Sidebar / usuario
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [userEmail, setUserEmail] = useState<string>("");
   const [userRoles, setUserRoles] = useState<string[]>([]);
 
-  // Vistas
   const [showStats, setShowStats] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
 
-  // Hooks de applicants
   const {
     applicants,
     loading: applicantsLoading,
@@ -222,7 +219,6 @@ export default function Page() {
     deleteById,
   } = useApplicants();
 
-  // Filtros
   const {
     filters,
     setSearchTerm,
@@ -234,33 +230,27 @@ export default function Page() {
     hasActiveFilters,
   } = useApplicantFilters("active");
 
-  // Modales / selección
   const [activeModal, setActiveModal] = useState<ModalType>(null);
   const [selectedApplicant, setSelectedApplicant] =
     useState<ApplicantListItemDto | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Profile modal states
   const [selectedProfile, setSelectedProfile] =
     useState<ApplicantProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
-  // Estados para el modal de Seguimiento
   const [seguimientoModal, setSeguimientoModal] = useState(false);
   const [selectedApplicantForSeguimiento, setSelectedApplicantForSeguimiento] =
     useState<ApplicantListItemDto | null>(null);
 
-  // Eliminados
   const [deletedApplicants, setDeletedApplicants] = useState<
     ApplicantListItemDto[]
   >([]);
   const [deletedLoading, setDeletedLoading] = useState(false);
   const [deletedError, setDeletedError] = useState<string | null>(null);
 
-  // Notificaciones
   const notificationCount = useNotificationBadge(deletedApplicants);
 
-  // --------- Cargar usuario desde JWT ----------
   useEffect(() => {
     const token =
       typeof window !== "undefined"
@@ -294,8 +284,8 @@ export default function Page() {
       href: "/notifications",
       badge: notificationCount,
     },
-    { icon: FileText, label: "Formularios", href: "/forms" },
-    { icon: User, label: "Usuarios", href: "/users" },
+    // { icon: FileText, label: "Formularios", href: "/forms" },
+    // { icon: User, label: "Usuarios", href: "/users" },
   ];
 
   const handleNavigation = (href: string) => {
@@ -339,7 +329,6 @@ export default function Page() {
     return colors[index];
   };
 
-  // Carga según statusFilter
   useEffect(() => {
     const load = async () => {
       try {
@@ -375,7 +364,6 @@ export default function Page() {
     return applicants;
   }, [filters.statusFilter, applicants, deletedApplicants]);
 
-  // Paginación
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
   const filteredApplicants = useMemo(
@@ -461,7 +449,6 @@ export default function Page() {
     }
   };
 
-  // Vista de perfil
   const handleViewProfile = async (applicant: ApplicantListItemDto) => {
     setSelectedApplicant(applicant);
     setActiveModal("profile");
@@ -478,7 +465,6 @@ export default function Page() {
     }
   };
 
-  //función para Seguimiento
   const handleViewSeguimiento = (applicant: ApplicantListItemDto) => {
     setSelectedApplicantForSeguimiento(applicant);
     setSeguimientoModal(true);
@@ -581,11 +567,9 @@ export default function Page() {
 
   return (
     <div className="min-h-screen bg-neutral-50">
-      {/* Sidebar */}
       <div
         className={`fixed left-0 top-0 h-full bg-gradient-to-br from-purple-50 to-pink-50 border-r border-neutral-200 flex flex-col transition-all duration-300 z-40 shadow-lg ${sidebarCollapsed ? "w-16" : "w-64"}`}
       >
-        {/* Header del sidebar */}
         <div className="flex items-center justify-between p-4 border-b border-neutral-200">
           {!sidebarCollapsed && (
             <div className="flex items-center gap-2">
@@ -611,7 +595,6 @@ export default function Page() {
           </button>
         </div>
 
-        {/* Navegación */}
         <nav className="flex-1 p-4 space-y-2">
           {menuItems.map((item) => {
             const isActive = pathname === item.href;
@@ -654,7 +637,6 @@ export default function Page() {
           })}
         </nav>
 
-        {/* Perfil de usuario */}
         <div className="p-4 border-t border-neutral-200">
           <div
             className={`flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 shadow-sm ${sidebarCollapsed ? "justify-center" : ""}`}
@@ -686,14 +668,12 @@ export default function Page() {
         </div>
       </div>
 
-      {/* Contenido principal */}
       <div
         className={`transition-all duration-300 ${sidebarCollapsed ? "ml-16" : "ml-64"}`}
       >
         <div className="max-w-7xl mx-auto px-6 py-8">
           <Greeting name={(userEmail || "").split("@")[0]} />
 
-          {/* Mostrar Notificaciones */}
           {showNotifications && (
             <Notifications
               deletedApplicants={deletedApplicants}
@@ -705,17 +685,14 @@ export default function Page() {
             />
           )}
 
-          {/* Estadísticas */}
           {showStats && (
             <div id="dashboard-stats" className="mb-8">
               <ApplicantStats ref={statsRef} />
             </div>
           )}
 
-          {/* Contenido principal de applicants */}
           {!showStats && !showNotifications && (
             <>
-              {/* Header */}
               <div className="mb-8">
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
                   <div>
@@ -761,7 +738,6 @@ export default function Page() {
                 </div>
               </div>
 
-              {/* Filtros */}
               <SearchAndFilters
                 searchTerm={filters.searchTerm}
                 onSearchChange={setSearchTerm}
@@ -775,7 +751,6 @@ export default function Page() {
                 totalCount={totalBase}
               />
 
-              {/* Botón para limpiar filtros */}
               {hasActiveFilters && (
                 <div className="mb-6">
                   <button
@@ -789,7 +764,6 @@ export default function Page() {
                 </div>
               )}
 
-              {/* Contenido principal */}
               {isLoading ? (
                 <div className="flex justify-center items-center py-20">
                   <div className="text-center">
@@ -834,7 +808,7 @@ export default function Page() {
                     onViewProfile={handleViewProfile}
                     onViewAdminRecord={handleViewSeguimiento}
                   />
-                  {/* Paginación debajo del panel */}
+
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mt-8">
                     <div className="flex items-center gap-2 bg-gradient-to-r from-purple-50 to-pink-50 border border-neutral-200 rounded-xl px-4 py-2 shadow-sm">
                       <label
@@ -901,7 +875,6 @@ export default function Page() {
             </>
           )}
 
-          {/* Modales */}
           <Modal
             isOpen={activeModal === "create"}
             onClose={() => setActiveModal(null)}
@@ -1078,7 +1051,6 @@ export default function Page() {
             )}
           </Modal>
 
-          {/* Modal de Perfil (refactor a componente) */}
           <ProfileModal
             isOpen={activeModal === "profile"}
             onClose={() => {
@@ -1091,8 +1063,6 @@ export default function Page() {
             isLoading={profileLoading}
             onSaved={(updated) => setSelectedProfile(updated)}
           />
-
-          {/* Modal de Seguimiento (AdminRecords) */}
           <AdminRecordsModal
             isOpen={seguimientoModal}
             onClose={() => {

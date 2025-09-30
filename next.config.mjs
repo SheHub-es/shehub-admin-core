@@ -4,10 +4,10 @@ const isDev = process.env.NODE_ENV === 'development';
 const nextConfig = {
   reactStrictMode: true,
 
-  // Solo rewrites en desarrollo
+  // Rewrites configuration for development environment only
   async rewrites() {
     if (!isDev) {
-      console.log('Production mode: no rewrites');
+      
       return [];
     }
 

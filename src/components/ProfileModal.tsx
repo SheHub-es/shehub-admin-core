@@ -13,6 +13,7 @@ import {
   MapPin,
   User,
   X,
+  AlertTriangle,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 import { applicantProfileApi } from "../features/lib/applicants";
@@ -28,6 +29,9 @@ import {
   validateGitHubUrl,
   validateLinkedInUrl,
 } from "../features/types/applicant";
+
+const MOTIVACION_MAX_LENGTH = 300;
+const EXPERIENCIA_MAX_LENGTH = 300;
 
 function ModalBase({
   isOpen,
@@ -86,6 +90,50 @@ function ModalBase({
           <div className="p-6">{children}</div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function CharacterCounter({
+  current,
+  max,
+  label,
+}: {
+  current: number;
+  max: number;
+  label: string;
+}) {
+  const remaining = max - current;
+  const percentage = (current / max) * 100;
+
+  const isWarning = percentage >= 80 && percentage < 95;
+  const isDanger = percentage >= 95;
+
+  return (
+    <div className="flex items-center justify-between text-xs mt-1">
+      <span
+        className={`font-medium ${
+          isDanger
+            ? "text-red-600"
+            : isWarning
+              ? "text-orange-600"
+              : "text-neutral-500"
+        }`}
+      >
+        {current} / {max} caracteres
+      </span>
+      {(isWarning || isDanger) && (
+        <div
+          className={`flex items-center gap-1 ${
+            isDanger ? "text-red-600" : "text-orange-600"
+          }`}
+        >
+          <AlertTriangle className="h-3 w-3" />
+          <span className="font-semibold">
+            {isDanger ? `¡Límite alcanzado!` : `${remaining} restantes`}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -169,7 +217,6 @@ export default function ProfileModal({
     if (profile) {
       setForm(toForm(profile));
     } else if (applicant) {
-      // Si no hay perfil pero sí applicant, inicializar formulario vacío para creación
       setForm(emptyForm);
     } else {
       setForm(null);
@@ -185,18 +232,39 @@ export default function ProfileModal({
     [form]
   );
 
-  // Para creación: LinkedIn es requerido y debe ser válido
+  const motivacionValid = useMemo(
+    () => !form?.motivacion || form.motivacion.length <= MOTIVACION_MAX_LENGTH,
+    [form]
+  );
+  const experienciaValid = useMemo(
+    () =>
+      !form?.experiencia || form.experiencia.length <= EXPERIENCIA_MAX_LENGTH,
+    [form]
+  );
+
   const canCreate = useMemo(() => {
     if (!form || !applicant || profile) return false;
     const hasLinkedIn = form.linkedInProfile.trim().length > 0;
     const linkedInValid = validateLinkedInUrl(form.linkedInProfile);
     const githubValid =
       !form.githubProfile || validateGitHubUrl(form.githubProfile);
-    return hasLinkedIn && linkedInValid && githubValid && !saving;
-  }, [form, applicant, profile, saving]);
+    return (
+      hasLinkedIn &&
+      linkedInValid &&
+      githubValid &&
+      motivacionValid &&
+      experienciaValid &&
+      !saving
+    );
+  }, [form, applicant, profile, motivacionValid, experienciaValid, saving]);
 
-  // Para edición: validaciones normales
-  const canSave = !!form && linkedInOk && githubOk && !saving;
+  const canSave =
+    !!form &&
+    linkedInOk &&
+    githubOk &&
+    motivacionValid &&
+    experienciaValid &&
+    !saving;
 
   const setField = (k: keyof ProfileForm, v: string) =>
     form && setForm({ ...form, [k]: v });
@@ -225,7 +293,6 @@ export default function ProfileModal({
         linkedInProfile: form.linkedInProfile,
       };
 
-      // Solo agregar campos opcionales que tienen valor
       if (form.githubProfile && form.githubProfile.trim()) {
         profileToCreate.githubProfile = form.githubProfile;
       }
@@ -278,9 +345,7 @@ export default function ProfileModal({
           </div>
         </div>
       ) : !profile ? (
-        // Caso: No existe perfil - Mostrar formulario para crear
         <div className="space-y-8">
-          {/* Header */}
           <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
@@ -313,7 +378,6 @@ export default function ProfileModal({
             </div>
           </div>
 
-          {/* Mensaje informativo */}
           <div className="text-center py-8 bg-yellow-50 border border-yellow-200 rounded-xl">
             <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-full flex items-center justify-center">
               <User className="h-8 w-8 text-yellow-600" />
@@ -327,7 +391,6 @@ export default function ProfileModal({
             </p>
           </div>
 
-          {/* Formulario de creación */}
           {form && (
             <>
               <div className="grid md:grid-cols-2 gap-8">
@@ -357,7 +420,6 @@ export default function ProfileModal({
                     </select>
                   </div>
 
-                  {/* Disponibilidad */}
                   <div className="bg-white border border-neutral-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Clock className="h-5 w-5 text-green-600" />
@@ -385,7 +447,6 @@ export default function ProfileModal({
                     </select>
                   </div>
 
-                  {/* Bootcamp */}
                   <div className="bg-white border border-neutral-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <BookOpen className="h-5 w-5 text-blue-600" />
@@ -401,7 +462,6 @@ export default function ProfileModal({
                     />
                   </div>
 
-                  {/* Enlaces profesionales */}
                   <div className="bg-white border border-neutral-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-4">
                       <ExternalLink className="h-5 w-5 text-indigo-600" />
@@ -410,7 +470,6 @@ export default function ProfileModal({
                       </h4>
                     </div>
 
-                    {/* LinkedIn */}
                     <div className="space-y-2 mb-4">
                       <label className="block text-sm font-semibold text-neutral-700">
                         LinkedIn <span className="text-red-500">*</span>
@@ -435,7 +494,6 @@ export default function ProfileModal({
                       )}
                     </div>
 
-                    {/* GitHub */}
                     <div className="space-y-2">
                       <label className="block text-sm font-semibold text-neutral-700">
                         GitHub
@@ -461,7 +519,6 @@ export default function ProfileModal({
                   </div>
                 </div>
 
-                {/* Columna derecha */}
                 <div className="space-y-6">
                   <div className="bg-white border border-neutral-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
@@ -475,10 +532,15 @@ export default function ProfileModal({
                       onChange={(e) => setField("motivacion", e.target.value)}
                       className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[120px]"
                       placeholder="¿Qué te motiva?"
+                      maxLength={MOTIVACION_MAX_LENGTH}
+                    />
+                    <CharacterCounter
+                      current={form.motivacion.length}
+                      max={MOTIVACION_MAX_LENGTH}
+                      label="Motivación"
                     />
                   </div>
 
-                  {/* Experiencia */}
                   <div className="bg-white border border-neutral-200 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-3">
                       <User className="h-5 w-5 text-orange-600" />
@@ -491,12 +553,17 @@ export default function ProfileModal({
                       onChange={(e) => setField("experiencia", e.target.value)}
                       className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[120px]"
                       placeholder="Resumen de experiencia"
+                      maxLength={EXPERIENCIA_MAX_LENGTH}
+                    />
+                    <CharacterCounter
+                      current={form.experiencia.length}
+                      max={EXPERIENCIA_MAX_LENGTH}
+                      label="Experiencia"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* Roles registrados */}
               {applicant.roles.length > 0 && (
                 <div className="bg-white border border-neutral-200 rounded-lg p-6">
                   <div className="flex items-center gap-2 mb-4">
@@ -518,7 +585,6 @@ export default function ProfileModal({
                 </div>
               )}
 
-              {/* Acciones de creación */}
               <div className="flex justify-end gap-3 pt-6 border-t border-neutral-200">
                 <button
                   onClick={onClose}
@@ -541,9 +607,7 @@ export default function ProfileModal({
           )}
         </div>
       ) : (
-        // Caso: Existe perfil - Mostrar/editar perfil
         <div className="space-y-8">
-          {/* Header */}
           <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
             <div className="flex items-center gap-6">
               <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
@@ -576,11 +640,9 @@ export default function ProfileModal({
             </div>
           </div>
 
-          {/* Form / View */}
           {form && (
             <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-6">
-                {/* Rol deseado */}
                 <div className="bg-white border border-neutral-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Briefcase className="h-5 w-5 text-purple-600" />
@@ -614,7 +676,6 @@ export default function ProfileModal({
                   )}
                 </div>
 
-                {/* Disponibilidad */}
                 <div className="bg-white border border-neutral-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Clock className="h-5 w-5 text-green-600" />
@@ -661,7 +722,6 @@ export default function ProfileModal({
                   )}
                 </div>
 
-                {/* Bootcamp */}
                 <div className="bg-white border border-neutral-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <BookOpen className="h-5 w-5 text-blue-600" />
@@ -681,7 +741,6 @@ export default function ProfileModal({
                   )}
                 </div>
 
-                {/* Enlaces profesionales */}
                 <div className="bg-white border border-neutral-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-4">
                     <ExternalLink className="h-5 w-5 text-indigo-600" />
@@ -690,7 +749,6 @@ export default function ProfileModal({
                     </h4>
                   </div>
 
-                  {/* LinkedIn */}
                   <div className="space-y-2 mb-4">
                     <label className="block text-sm font-semibold text-neutral-700">
                       LinkedIn
@@ -734,7 +792,6 @@ export default function ProfileModal({
                     )}
                   </div>
 
-                  {/* GitHub */}
                   <div className="space-y-2">
                     <label className="block text-sm font-semibold text-neutral-700">
                       GitHub
@@ -780,9 +837,7 @@ export default function ProfileModal({
                 </div>
               </div>
 
-              {/* Columna derecha */}
               <div className="space-y-6">
-                {/* Motivación */}
                 <div className="bg-white border border-neutral-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <Lightbulb className="h-5 w-5 text-yellow-600" />
@@ -791,12 +846,20 @@ export default function ProfileModal({
                     </h4>
                   </div>
                   {isEditing ? (
-                    <textarea
-                      value={form.motivacion}
-                      onChange={(e) => setField("motivacion", e.target.value)}
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[120px]"
-                      placeholder="¿Qué te motiva?"
-                    />
+                    <>
+                      <textarea
+                        value={form.motivacion}
+                        onChange={(e) => setField("motivacion", e.target.value)}
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[120px]"
+                        placeholder="¿Qué te motiva?"
+                        maxLength={MOTIVACION_MAX_LENGTH}
+                      />
+                      <CharacterCounter
+                        current={form.motivacion.length}
+                        max={MOTIVACION_MAX_LENGTH}
+                        label="Motivación"
+                      />
+                    </>
                   ) : (
                     <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                       <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">
@@ -806,7 +869,6 @@ export default function ProfileModal({
                   )}
                 </div>
 
-                {/* Experiencia */}
                 <div className="bg-white border border-neutral-200 rounded-lg p-4">
                   <div className="flex items-center gap-2 mb-3">
                     <User className="h-5 w-5 text-orange-600" />
@@ -815,12 +877,22 @@ export default function ProfileModal({
                     </h4>
                   </div>
                   {isEditing ? (
-                    <textarea
-                      value={form.experiencia}
-                      onChange={(e) => setField("experiencia", e.target.value)}
-                      className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[120px]"
-                      placeholder="Resumen de experiencia"
-                    />
+                    <>
+                      <textarea
+                        value={form.experiencia}
+                        onChange={(e) =>
+                          setField("experiencia", e.target.value)
+                        }
+                        className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[120px]"
+                        placeholder="Resumen de experiencia"
+                        maxLength={EXPERIENCIA_MAX_LENGTH}
+                      />
+                      <CharacterCounter
+                        current={form.experiencia.length}
+                        max={EXPERIENCIA_MAX_LENGTH}
+                        label="Experiencia"
+                      />
+                    </>
                   ) : (
                     <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
                       <p className="text-neutral-700 leading-relaxed whitespace-pre-wrap">
@@ -833,7 +905,6 @@ export default function ProfileModal({
             </div>
           )}
 
-          {/* Roles registrados */}
           {applicant.roles.length > 0 && (
             <div className="bg-white border border-neutral-200 rounded-lg p-6">
               <div className="flex items-center gap-2 mb-4">
@@ -855,7 +926,6 @@ export default function ProfileModal({
             </div>
           )}
 
-          {/* Acciones */}
           <div className="flex justify-end gap-3 pt-6 border-t border-neutral-200">
             {isEditing ? (
               <>

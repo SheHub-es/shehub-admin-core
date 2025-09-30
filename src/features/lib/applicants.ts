@@ -1,5 +1,3 @@
-// lib/api/applicants.ts
-
 import {
   Applicant,
   ApplicantDetailDto,
@@ -13,7 +11,6 @@ import {
   ApplicantProfile,
   UpdateApplicantProfileDto,
   CreateApplicantProfileDto,
-  
 } from "../types/applicant";
 
 export class ApiClientError extends Error {
@@ -86,7 +83,6 @@ async function fetchApi<T>(
     throw new ApiClientError(response.status, message, payload);
   }
 
-  // 204 o sin cuerpo
   if (response.status === 204) {
     return {} as T;
   }
@@ -99,7 +95,6 @@ async function fetchApi<T>(
 }
 
 export const applicantApi = {
-  // CREATE
   create: async (dto: CreateApplicantDto): Promise<Applicant> => {
     return fetchApi("", {
       method: "POST",
@@ -107,7 +102,6 @@ export const applicantApi = {
     });
   },
 
-  // READ
   getAll: async (): Promise<ApplicantListItemDto[]> => {
     return fetchApi("");
   },
@@ -185,7 +179,6 @@ export const applicantApi = {
     return stats;
   },
 
-  // UPDATE
   updateById: async (
     id: number,
     dto: UpdateApplicantDto
@@ -218,7 +211,6 @@ export const applicantApi = {
     });
   },
 
-  // DELETE
   deleteByEmail: async (email: string): Promise<void> => {
     return fetchApi(`email/${encodeURIComponent(email)}`, {
       method: "DELETE",
@@ -295,9 +287,7 @@ export const applicantProfileApi = {
         try {
           const errorData = await response.json();
           message = errorData.message || message;
-        } catch {
-          // Si no puede parsear el error
-        }
+        } catch {}
         throw new ApiClientError(response.status, message);
       }
 
@@ -313,7 +303,6 @@ export const applicantProfileApi = {
     }
   },
 
-  // Actualizar perfil por profile ID
   updateById: async (
     profileId: number,
     profileData: UpdateApplicantProfileDto
@@ -342,9 +331,7 @@ export const applicantProfileApi = {
         try {
           const errorData = await response.json();
           message = errorData.message || message;
-        } catch {
-          // Si no puede parsear el error
-        }
+        } catch {}
         throw new ApiClientError(response.status, message);
       }
 
@@ -360,7 +347,6 @@ export const applicantProfileApi = {
     }
   },
 
-  // Eliminar perfil por profile ID (aunque no lo uses en el UI)
   deleteById: async (profileId: number): Promise<void> => {
     try {
       const response = await fetch(buildUrl(`profile/${profileId}`), {
@@ -375,9 +361,7 @@ export const applicantProfileApi = {
         try {
           const errorData = await response.json();
           message = errorData.message || message;
-        } catch {
-          // Si no puede parsear el error
-        }
+        } catch {}
         throw new ApiClientError(response.status, message);
       }
 
@@ -393,13 +377,11 @@ export const applicantProfileApi = {
     }
   },
 
-  // Verificar si un applicant tiene perfil
   hasProfile: async (applicantId: number): Promise<boolean> => {
     try {
       const profile = await applicantProfileApi.getByApplicantId(applicantId);
       return profile !== null;
     } catch (error) {
-      // Si hay error 404, significa que no tiene perfil
       if (error instanceof ApiClientError && error.status === 404) {
         return false;
       }

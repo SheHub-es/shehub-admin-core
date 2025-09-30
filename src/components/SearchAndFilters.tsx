@@ -29,17 +29,14 @@ export function SearchAndFilters({
 }: SearchAndFiltersProps) {
   return (
     <div className="bg-[var(--color-card-white-bg-default)] rounded-lg shadow-[var(--color-card-shadow-default)] mb-6 fade-in">
-      {/* Header del panel de filtros */}
       <div className="px-6 py-4 border-b border-neutral-200">
         <h3 className="text-[var(--text-size-400)] font-medium text-[var(--color-card-white-title)]">
           Buscar y Filtrar Applicants
         </h3>
       </div>
 
-      {/* Contenido principal */}
       <div className="p-6">
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Barra de búsqueda */}
           <div className="flex-1">
             <label
               htmlFor="search"
@@ -65,9 +62,7 @@ export function SearchAndFilters({
             </div>
           </div>
 
-          {/* Filtros */}
           <div className="flex flex-col sm:flex-row gap-4">
-            {/* Filtro por idioma */}
             <div className="min-w-[160px]">
               <label
                 htmlFor="languageFilter"
@@ -106,7 +101,6 @@ export function SearchAndFilters({
               </select>
             </div>
 
-            {/* Filtro por tipo (mentor/colaboradora) */}
             <div className="min-w-[160px]">
               <label
                 htmlFor="mentorFilter"
@@ -134,7 +128,6 @@ export function SearchAndFilters({
               </select>
             </div>
 
-            {/* Filtro por estado */}
             <div className="min-w-[140px]">
               <label
                 htmlFor="statusFilter"
@@ -164,14 +157,12 @@ export function SearchAndFilters({
           </div>
         </div>
 
-        {/* Contador y badges de estado */}
         <div className="mt-6 pt-4 border-t border-neutral-100 flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <span className="text-[var(--text-size-300)] text-[var(--color-foreground)] font-medium">
               Mostrando {filteredCount} de {totalCount} applicants
             </span>
 
-            {/* Badge de estado activo */}
             {statusFilter === "deleted" && (
               <span
                 className="inline-flex items-center px-3 py-1 rounded-full text-[var(--text-size-100)] font-medium 
@@ -201,7 +192,6 @@ export function SearchAndFilters({
             )}
           </div>
 
-          {/* Indicador visual de filtros activos */}
           {(searchTerm ||
             languageFilter !== "all" ||
             mentorFilter !== "all") && (

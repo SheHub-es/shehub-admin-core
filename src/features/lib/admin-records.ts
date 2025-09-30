@@ -1,5 +1,3 @@
-// lib/admin-records.ts
-
 import {
   AdminRecordsCreateDTO,
   AdminRecordsDetailDTO,
@@ -21,23 +19,27 @@ export class ApiClientError extends Error {
   }
 }
 
-// Mapas de enlaces para proyectos (igual que en el backend)
 const PROJECT_LINKS: Record<string, string> = {
-  "New Data Infra": "https://www.notion.so/New-Data-Infra-1c3c1a84207a809e91e9eb0829da5898?pvs=21",
-  "Teaser Page": "https://www.notion.so/Teaser-Page-1b3c1a84207a806a8afae7129bf79163?pvs=21",
-  "Visitor's Website": "https://www.notion.so/Visitor-s-Website-1c3c1a84207a8053ae2af9076e2d30ff?pvs=21",
-  "Design System": "https://www.notion.so/Design-System-1eac1a84207a8029ab09e52ec4e9b306?pvs=21",
-  "Data Infra": "https://github.com/SheHub-es/shehub-core"
+  "New Data Infra":
+    "https://www.notion.so/New-Data-Infra-1c3c1a84207a809e91e9eb0829da5898?pvs=21",
+  "Teaser Page":
+    "https://www.notion.so/Teaser-Page-1b3c1a84207a806a8afae7129bf79163?pvs=21",
+  "Visitor's Website":
+    "https://www.notion.so/Visitor-s-Website-1c3c1a84207a8053ae2af9076e2d30ff?pvs=21",
+  "Design System":
+    "https://www.notion.so/Design-System-1eac1a84207a8029ab09e52ec4e9b306?pvs=21",
+  "Data Infra": "https://github.com/SheHub-es/shehub-core",
 };
 
-// Helper functions para manejar el formato MultiOption del backend
 export const projectsToMultiOptionString = (projects: string[]): string => {
   if (!projects || projects.length === 0) return "";
-  
-  return projects.map(project => {
-    const link = PROJECT_LINKS[project];
-    return link ? `${project} | ${link}` : project;
-  }).join(", ");
+
+  return projects
+    .map((project) => {
+      const link = PROJECT_LINKS[project];
+      return link ? `${project} | ${link}` : project;
+    })
+    .join(", ");
 };
 
 export const accessToMultiOptionString = (accessList: string[]): string => {
@@ -45,17 +47,17 @@ export const accessToMultiOptionString = (accessList: string[]): string => {
   return accessList.join(", ");
 };
 
-// Helper para convertir respuesta del backend a arrays para el frontend
 export const multiOptionStringToArray = (str?: string): string[] => {
-  if (!str || str.trim() === '') return [];
-  
-  // El formato del backend puede ser: "título | enlace, título2 | enlace2" o "título, título2"
-  return str.split(',').map(item => {
-    const trimmed = item.trim();
-    // Si tiene formato "título | enlace", extraer solo el título
-    const pipeIndex = trimmed.indexOf(' | ');
-    return pipeIndex > -1 ? trimmed.substring(0, pipeIndex).trim() : trimmed;
-  }).filter(item => item.length > 0);
+  if (!str || str.trim() === "") return [];
+
+  return str
+    .split(",")
+    .map((item) => {
+      const trimmed = item.trim();
+      const pipeIndex = trimmed.indexOf(" | ");
+      return pipeIndex > -1 ? trimmed.substring(0, pipeIndex).trim() : trimmed;
+    })
+    .filter((item) => item.length > 0);
 };
 
 function buildUrl(endpoint: string) {
@@ -63,7 +65,6 @@ function buildUrl(endpoint: string) {
   const path = clean ? `/${clean}` : "";
 
   if (process.env.NODE_ENV === "development") {
-    // En desarrollo usa el rewrite
     const url = `/admin-records${path}`;
 
     return url;
@@ -91,7 +92,6 @@ async function fetchApi<T>(
     ...options,
   });
 
-
   const contentType = response.headers.get("content-type") || "";
   const isJson = contentType.includes("application/json");
 
@@ -99,9 +99,7 @@ async function fetchApi<T>(
     let payload: unknown = null;
     try {
       payload = isJson ? await response.json() : await response.text();
-    } catch {
-      // Ignorar errores de parseo
-    }
+    } catch {}
 
     let message: string = `HTTP ${response.status}: ${response.statusText}`;
     if (
@@ -120,13 +118,12 @@ async function fetchApi<T>(
       statusText: response.statusText,
       url,
       payload,
-      method: options.method || "GET"
+      method: options.method || "GET",
     });
 
     throw new ApiClientError(response.status, message, payload);
   }
 
-  // 204 No Content o sin cuerpo
   if (response.status === 204) {
     return {} as T;
   }
@@ -139,82 +136,106 @@ async function fetchApi<T>(
 }
 
 export const adminRecordsApi = {
-  // CREATE - Crear nuevo AdminRecord
-  create: async (dto: AdminRecordsCreateDTO): Promise<AdminRecordsDetailDTO> => {
-    // Convertir arrays a formato MultiOption antes de enviar
+  create: async (
+    dto: AdminRecordsCreateDTO
+  ): Promise<AdminRecordsDetailDTO> => {
     const formattedDto = {
       ...dto,
-      projects: projectsToMultiOptionString(dto.projects ? dto.projects.split(',').map(p => p.trim()).filter(p => p) : []),
-      accessTo: accessToMultiOptionString(dto.accessTo ? dto.accessTo.split(',').map(a => a.trim()).filter(a => a) : [])
+      projects: projectsToMultiOptionString(
+        dto.projects
+          ? dto.projects
+              .split(",")
+              .map((p) => p.trim())
+              .filter((p) => p)
+          : []
+      ),
+      accessTo: accessToMultiOptionString(
+        dto.accessTo
+          ? dto.accessTo
+              .split(",")
+              .map((a) => a.trim())
+              .filter((a) => a)
+          : []
+      ),
     };
-
 
     const result = await fetchApi<AdminRecordsDetailDTO>("", {
       method: "POST",
       body: JSON.stringify(formattedDto),
     });
 
-    // Convertir la respuesta del backend a formato frontend
     if (result.projects) {
-      result.projects = result.projects.map(p => ({
+      result.projects = result.projects.map((p) => ({
         title: p.title,
-        ...(p.link && { link: p.link })
+        ...(p.link && { link: p.link }),
       }));
     }
     if (result.accessTo) {
-      result.accessTo = result.accessTo.map(a => ({
+      result.accessTo = result.accessTo.map((a) => ({
         title: a.title,
-        ...(a.link && { link: a.link })
+        ...(a.link && { link: a.link }),
       }));
     }
 
     return result;
   },
 
-  // READ - Obtener datos
   getAllActive: async (): Promise<AdminRecordsListItemDTO[]> => {
     const results = await fetchApi<AdminRecordsListItemDTO[]>("active");
-    
-    // Procesar cada resultado para asegurar formato correcto
-    return results.map(record => ({
+
+    return results.map((record) => ({
       ...record,
       projects: record.projects || [],
-      accessTo: record.accessTo || []
+      accessTo: record.accessTo || [],
     }));
   },
 
   getById: async (id: number): Promise<AdminRecordsDetailDTO> => {
     const result = await fetchApi<AdminRecordsDetailDTO>(`${id}`);
-    
-    // Asegurar que projects y accessTo estén en formato correcto
+
     return {
       ...result,
       projects: result.projects || [],
-      accessTo: result.accessTo || []
+      accessTo: result.accessTo || [],
     };
   },
 
-  getByApplicantId: async (applicantId: number): Promise<AdminRecordsDetailDTO> => {
-    const result = await fetchApi<AdminRecordsDetailDTO>(`applicant/${applicantId}`);
-    
-    // Asegurar que projects y accessTo estén en formato correcto
+  getByApplicantId: async (
+    applicantId: number
+  ): Promise<AdminRecordsDetailDTO> => {
+    const result = await fetchApi<AdminRecordsDetailDTO>(
+      `applicant/${applicantId}`
+    );
+
     return {
       ...result,
       projects: result.projects || [],
-      accessTo: result.accessTo || []
+      accessTo: result.accessTo || [],
     };
   },
 
-  // UPDATE - Actualizar datos
   updatePartial: async (
     id: number,
     dto: AdminRecordsPatchDTO
   ): Promise<AdminRecordsDetailDTO> => {
-    // Convertir arrays a formato MultiOption antes de enviar
     const formattedDto = {
       ...dto,
-      projects: dto.projects ? projectsToMultiOptionString(dto.projects.split(',').map(p => p.trim()).filter(p => p)) : undefined,
-      accessTo: dto.accessTo ? accessToMultiOptionString(dto.accessTo.split(',').map(a => a.trim()).filter(a => a)) : undefined
+      projects: dto.projects
+        ? projectsToMultiOptionString(
+            dto.projects
+              .split(",")
+              .map((p) => p.trim())
+              .filter((p) => p)
+          )
+        : undefined,
+      accessTo: dto.accessTo
+        ? accessToMultiOptionString(
+            dto.accessTo
+              .split(",")
+              .map((a) => a.trim())
+              .filter((a) => a)
+          )
+        : undefined,
     };
 
     const result = await fetchApi<AdminRecordsDetailDTO>(`${id}`, {
@@ -222,11 +243,10 @@ export const adminRecordsApi = {
       body: JSON.stringify(formattedDto),
     });
 
-    // Asegurar formato correcto en la respuesta
     return {
       ...result,
       projects: result.projects || [],
-      accessTo: result.accessTo || []
+      accessTo: result.accessTo || [],
     };
   },
 
@@ -234,11 +254,24 @@ export const adminRecordsApi = {
     id: number,
     dto: AdminRecordsUpdateDTO
   ): Promise<AdminRecordsDetailDTO> => {
-    // Convertir arrays a formato MultiOption antes de enviar
     const formattedDto = {
       ...dto,
-      projects: dto.projects ? projectsToMultiOptionString(dto.projects.split(',').map(p => p.trim()).filter(p => p)) : undefined,
-      accessTo: dto.accessTo ? accessToMultiOptionString(dto.accessTo.split(',').map(a => a.trim()).filter(a => a)) : undefined
+      projects: dto.projects
+        ? projectsToMultiOptionString(
+            dto.projects
+              .split(",")
+              .map((p) => p.trim())
+              .filter((p) => p)
+          )
+        : undefined,
+      accessTo: dto.accessTo
+        ? accessToMultiOptionString(
+            dto.accessTo
+              .split(",")
+              .map((a) => a.trim())
+              .filter((a) => a)
+          )
+        : undefined,
     };
 
     const result = await fetchApi<AdminRecordsDetailDTO>(`${id}`, {
@@ -246,22 +279,19 @@ export const adminRecordsApi = {
       body: JSON.stringify(formattedDto),
     });
 
-    // Asegurar formato correcto en la respuesta
     return {
       ...result,
       projects: result.projects || [],
-      accessTo: result.accessTo || []
+      accessTo: result.accessTo || [],
     };
   },
 
-  // DELETE - Eliminar AdminRecord
   deleteById: async (id: number): Promise<void> => {
     return fetchApi(`${id}`, {
       method: "DELETE",
     });
   },
 
-  // Verificar si un applicant tiene AdminRecord
   hasAdminRecord: async (applicantId: number): Promise<boolean> => {
     try {
       await adminRecordsApi.getByApplicantId(applicantId);
@@ -274,7 +304,6 @@ export const adminRecordsApi = {
     }
   },
 
-  // Obtener estadísticas básicas (opcional)
   getActiveCount: async (): Promise<number> => {
     const activeRecords = await adminRecordsApi.getAllActive();
     return activeRecords.length;

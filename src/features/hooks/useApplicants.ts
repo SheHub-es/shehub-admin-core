@@ -1,4 +1,3 @@
-// features/hooks/useApplicants.ts
 import { useCallback, useEffect, useState } from 'react';
 import { ApiClientError, applicantApi } from '../lib/applicants'; 
 import {
