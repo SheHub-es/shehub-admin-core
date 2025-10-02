@@ -26,6 +26,15 @@ import {
   StatusDisplay,
 } from "../features/types/applicant";
 
+const CHAR_LIMITS = {
+  orgNotes: 500,
+  bookingLink: 2048,
+  portfolio: 300,
+  oneToOneNotes: 2048,
+  projectInterview: 300,
+  notas: 500,
+};
+
 function ModalBase({
   isOpen,
   onClose,
@@ -55,6 +64,7 @@ function ModalBase({
     xl: "max-w-4xl",
     "2xl": "max-w-6xl",
   };
+  
 
   return (
     <div
@@ -673,6 +683,9 @@ export default function AdminRecordsModal({
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px]"
               placeholder="Notas internas de la organización..."
             />
+            <div className="text-xs text-neutral-500 mt-1">
+              {createForm.orgNotes.length} / {CHAR_LIMITS.orgNotes} caracteres
+            </div>
           </div>
 
           <div>
@@ -687,6 +700,9 @@ export default function AdminRecordsModal({
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
               placeholder="https://calendly.com/..."
             />
+            <div className="text-xs text-neutral-500 mt-1">
+              {createForm.bookingLink.length} / {CHAR_LIMITS.bookingLink} caracteres
+            </div>
           </div>
 
           <div>
@@ -701,6 +717,9 @@ export default function AdminRecordsModal({
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
               placeholder="Descripción del portfolio..."
             />
+            <div className="text-xs text-neutral-500 mt-1">
+              {createForm.portfolio.length} / {CHAR_LIMITS.portfolio} caracteres
+            </div>
           </div>
 
           <div>
@@ -715,6 +734,9 @@ export default function AdminRecordsModal({
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
               placeholder="URL de notas de reuniones 1:1..."
             />
+            <div className="text-xs text-neutral-500 mt-1">
+              {createForm.oneToOneNotes.length} / {CHAR_LIMITS.oneToOneNotes} caracteres
+            </div>
           </div>
 
           <div>
@@ -732,6 +754,9 @@ export default function AdminRecordsModal({
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
               placeholder="Resultados de la entrevista..."
             />
+            <div className="text-xs text-neutral-500 mt-1">
+              {createForm.projectInterview.length} / {CHAR_LIMITS.projectInterview} caracteres
+            </div>
           </div>
 
           <div>
@@ -746,6 +771,9 @@ export default function AdminRecordsModal({
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px]"
               placeholder="Notas adicionales..."
             />
+            <div className="text-xs text-neutral-500 mt-1">
+              {createForm.notas.length} / {CHAR_LIMITS.notas} caracteres
+            </div>
           </div>
         </div>
       </div>
@@ -917,6 +945,9 @@ export default function AdminRecordsModal({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px]"
                 placeholder="Notas internas de la organización..."
               />
+              <div className="text-xs text-neutral-500 mt-1">
+                {editForm.orgNotes.length} / {CHAR_LIMITS.orgNotes} caracteres
+              </div>
             </div>
 
             <div>
@@ -931,6 +962,9 @@ export default function AdminRecordsModal({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
                 placeholder="https://calendly.com/..."
               />
+              <div className="text-xs text-neutral-500 mt-1">
+                {editForm.bookingLink.length} / {CHAR_LIMITS.bookingLink} caracteres
+              </div>
             </div>
 
             <div>
@@ -945,6 +979,9 @@ export default function AdminRecordsModal({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
                 placeholder="Descripción del portfolio..."
               />
+              <div className="text-xs text-neutral-500 mt-1">
+                {editForm.portfolio.length} / {CHAR_LIMITS.portfolio} caracteres
+              </div>
             </div>
 
             <div>
@@ -959,6 +996,9 @@ export default function AdminRecordsModal({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
                 placeholder="URL de notas de reuniones 1:1..."
               />
+              <div className="text-xs text-neutral-500 mt-1">
+                {editForm.oneToOneNotes.length} / {CHAR_LIMITS.oneToOneNotes} caracteres
+              </div>
             </div>
 
             <div>
@@ -973,6 +1013,9 @@ export default function AdminRecordsModal({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
                 placeholder="Resultados de la entrevista..."
               />
+              <div className="text-xs text-neutral-500 mt-1">
+                {editForm.projectInterview.length} / {CHAR_LIMITS.projectInterview} caracteres
+              </div>
             </div>
 
             <div>
@@ -987,6 +1030,9 @@ export default function AdminRecordsModal({
                 className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px]"
                 placeholder="Notas adicionales..."
               />
+              <div className="text-xs text-neutral-500 mt-1">
+                {editForm.notas.length} / {CHAR_LIMITS.notas} caracteres
+              </div>
             </div>
           </div>
         </div>
