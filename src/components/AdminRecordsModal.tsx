@@ -26,6 +26,7 @@ import {
   StatusDisplay,
 } from "../features/types/applicant";
 
+// Límites de caracteres según el backend
 const CHAR_LIMITS = {
   orgNotes: 500,
   bookingLink: 2048,
@@ -67,31 +68,29 @@ function ModalBase({
   
 
   return (
-    <div
-      className="fixed inset-0 z-50 overflow-y-auto"
-      aria-modal="true"
-      role="dialog"
-    >
+    <div className="fixed inset-0 z-50 overflow-y-auto" aria-modal="true" role="dialog">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div
-          className="fixed inset-0 transition-opacity bg-neutral-900/50 backdrop-blur-sm z-40"
+        <div 
+          className="fixed inset-0 transition-opacity bg-neutral-900/60 backdrop-blur-md z-40" 
           onClick={onClose}
+          style={{ animation: 'fadeIn 0.2s ease-out' }}
         />
         <div
-          className={`inline-block w-full ${sizeClasses[size]} p-0 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-xl relative z-50 max-h-[90vh] overflow-y-auto`}
+          className={`inline-block w-full ${sizeClasses[size]} p-0 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-2xl rounded-2xl relative z-50 max-h-[90vh] overflow-y-auto border border-neutral-100`}
+          style={{ animation: 'slideUp 0.3s ease-out' }}
         >
-          <div className="flex items-center justify-between p-6 border-b border-neutral-200 bg-gradient-to-r from-neutral-50 to-purple-50 sticky top-0 z-10">
-            <h3 className="text-lg font-bold text-neutral-900">{title}</h3>
+          <div className="flex items-center justify-between p-6 border-b border-neutral-200 bg-gradient-to-r from-purple-50 via-pink-50 to-orange-50 sticky top-0 z-10 shadow-sm">
+            <h3 className="text-lg font-bold text-neutral-900 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">{title}</h3>
             <button
               onClick={onClose}
-              className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 rounded-lg transition-all duration-200"
+              className="p-2 text-neutral-400 hover:text-neutral-600 hover:bg-white/50 rounded-lg transition-all duration-200 hover:rotate-90 hover:scale-110"
               type="button"
               aria-label="Cerrar"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
-          <div className="p-6">{children}</div>
+          <div className="p-6 bg-gradient-to-b from-white to-neutral-50">{children}</div>
         </div>
       </div>
     </div>
@@ -350,44 +349,53 @@ export default function AdminRecordsModal({
       ) : hasRecord && adminRecord ? (
         <div className="space-y-6">
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-white border border-neutral-200 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-white to-purple-50 border border-purple-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
               <div className="flex items-center gap-2 mb-2">
-                <User className="h-4 w-4 text-purple-600" />
-                <span className="text-sm font-medium text-neutral-700">
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <User className="h-4 w-4 text-purple-600" />
+                </div>
+                <span className="text-sm font-semibold text-neutral-700">
                   Status
                 </span>
               </div>
               {adminRecord.status && getStatusBadge(adminRecord.status)}
             </div>
 
-            <div className="bg-white border border-neutral-200 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-white to-green-50 border border-green-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
               <div className="flex items-center gap-2 mb-2">
-                <Clock className="h-4 w-4 text-green-600" />
-                <span className="text-sm font-medium text-neutral-700">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Clock className="h-4 w-4 text-green-600" />
+                </div>
+                <span className="text-sm font-semibold text-neutral-700">
                   Actualmente
                 </span>
               </div>
-              <span className="text-neutral-900">
+              <span className="text-neutral-900 font-medium">
                 {adminRecord.currently
                   ? CurrentlyDisplay[adminRecord.currently]
                   : "—"}
               </span>
             </div>
 
-            <div className="bg-white border border-neutral-200 rounded-lg p-4">
+            <div className="bg-gradient-to-br from-white to-blue-50 border border-blue-100 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105">
               <div className="flex items-center gap-2 mb-2">
-                <MapPin className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-neutral-700">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <MapPin className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="text-sm font-semibold text-neutral-700">
                   Ciudad
                 </span>
               </div>
-              <span className="text-neutral-900">
+              <span className="text-neutral-900 font-medium">
                 {adminRecord.ciudad || "—"}
               </span>
             </div>
           </div>
-          <div className="bg-white border border-neutral-200 rounded-lg p-4">
-            <h5 className="font-semibold text-neutral-900 mb-3">
+          <div className="bg-gradient-to-br from-white to-purple-50 border border-purple-200 rounded-xl p-5 shadow-sm">
+            <h5 className="font-bold text-neutral-900 mb-4 flex items-center gap-2">
+              <div className="p-1.5 bg-purple-100 rounded-lg">
+                <Users className="h-4 w-4 text-purple-600" />
+              </div>
               Proyectos Asignados
             </h5>
             {adminRecord.projects && adminRecord.projects.length > 0 ? (
@@ -395,15 +403,15 @@ export default function AdminRecordsModal({
                 {adminRecord.projects.map((project, idx) => (
                   <div
                     key={idx}
-                    className="flex items-center justify-between p-3 bg-purple-50 border border-purple-200 rounded-lg"
+                    className="flex items-center justify-between p-4 bg-white border border-purple-200 rounded-lg hover:shadow-md hover:border-purple-300 transition-all duration-200"
                   >
-                    <span className="font-medium text-purple-900">
+                    <span className="font-semibold text-purple-900">
                       {project.title}
                     </span>
                     {project.link && (
                       <button
                         onClick={() => window.open(project.link, "_blank")}
-                        className="text-purple-600 hover:text-purple-800 transition-colors"
+                        className="text-purple-600 hover:text-purple-800 hover:scale-110 transition-all duration-200"
                         title="Abrir enlace"
                       >
                         <ExternalLink className="h-4 w-4" />
@@ -413,7 +421,7 @@ export default function AdminRecordsModal({
                 ))}
               </div>
             ) : (
-              <p className="text-neutral-500 italic">Sin proyectos asignados</p>
+              <p className="text-neutral-500 italic text-center py-4">Sin proyectos asignados</p>
             )}
           </div>
 
@@ -683,8 +691,19 @@ export default function AdminRecordsModal({
               className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[100px]"
               placeholder="Notas internas de la organización..."
             />
-            <div className="text-xs text-neutral-500 mt-1">
-              {createForm.orgNotes.length} / {CHAR_LIMITS.orgNotes} caracteres
+            <div className={`text-xs mt-1 flex justify-between items-center ${
+              createForm.orgNotes.length > CHAR_LIMITS.orgNotes * 0.9
+                ? 'text-orange-600 font-medium'
+                : createForm.orgNotes.length > CHAR_LIMITS.orgNotes * 0.7
+                ? 'text-yellow-600'
+                : 'text-neutral-500'
+            }`}>
+              <span>
+                {createForm.orgNotes.length} / {CHAR_LIMITS.orgNotes} caracteres
+              </span>
+              {createForm.orgNotes.length > CHAR_LIMITS.orgNotes * 0.9 && (
+                <span className="text-xs">⚠️ Cerca del límite</span>
+              )}
             </div>
           </div>
 
