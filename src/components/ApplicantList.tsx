@@ -9,6 +9,7 @@ import {
   Calendar,
   Mail,
   Settings,
+  Briefcase,
 } from "lucide-react";
 import {
   ApplicantListItemDto,
@@ -18,6 +19,7 @@ import {
 
 interface ApplicantListProps {
   applicants: ApplicantListItemDto[];
+  applicantProfiles?: Map<number, string>;
   onEdit: (applicant: ApplicantListItemDto) => void;
   onDelete: (applicant: ApplicantListItemDto) => void;
   onView?: (applicant: ApplicantListItemDto) => void;
@@ -33,6 +35,14 @@ const languageLabels: Record<Language, string> = {
   [Language.CAT]: getLanguageDisplayName(Language.CAT),
   [Language.EN_GB]: getLanguageDisplayName(Language.EN_GB),
   [Language.EN_US]: getLanguageDisplayName(Language.EN_US),
+};
+
+// 👇 AGREGAR ESTA FUNCIÓN
+const parseApiTimestamp = (ts?: string) => {
+  if (!ts) return null;
+  const isoish = ts.replace(" ", "T");
+  const d = new Date(isoish);
+  return isNaN(d.getTime()) ? null : d;
 };
 
 const getInitials = (firstName: string, lastName: string): string => {
@@ -64,6 +74,7 @@ const getAvatarColors = (name: string) => {
 
 export function ApplicantList({
   applicants,
+  applicantProfiles,
   onEdit,
   onDelete,
   onView,
@@ -112,6 +123,12 @@ export function ApplicantList({
               <th className="px-6 py-4 text-left text-xs font-bold text-neutral-700 uppercase tracking-wider min-w-[100px]">
                 Tipo
               </th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-neutral-700 uppercase tracking-wider min-w-[180px]">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-purple-600" />
+                  Rol Deseado
+                </div>
+              </th>
               <th className="px-6 py-4 text-left text-xs font-bold text-neutral-700 uppercase tracking-wider min-w-[200px]">
                 Roles Profesionales
               </th>
@@ -144,6 +161,10 @@ export function ApplicantList({
                 applicant.firstName,
                 applicant.lastName
               );
+
+              // 👇 CALCULAR SI ES NUEVO (dentro del map)
+              const createdDate = parseApiTimestamp(applicant.timestamp as string);
+              const isNew = createdDate && (Date.now() - createdDate.getTime()) < 48 * 60 * 60 * 1000;
 
               return (
                 <tr
@@ -179,6 +200,12 @@ export function ApplicantList({
                           >
                             {applicant.firstName} {applicant.lastName}
                           </div>
+                          {/* 👇 BADGE NUEVO */}
+                          {isNew && !applicant.deleted && (
+                            <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 border border-green-200 animate-pulse">
+                              Nuevo
+                            </span>
+                          )}
                           {applicant.deleted && (
                             <span className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-700 border border-red-200">
                               <AlertCircle className="h-3 w-3 mr-1" />
@@ -243,6 +270,18 @@ export function ApplicantList({
                         </>
                       )}
                     </span>
+                  </td>
+
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {applicantProfiles?.get(applicant.id) ? (
+                      <span className="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-teal-100 text-teal-800 border border-teal-200">
+                        {applicantProfiles.get(applicant.id)}
+                      </span>
+                    ) : (
+                      <span className="text-neutral-400 italic text-xs">
+                        No especificado
+                      </span>
+                    )}
                   </td>
 
                   <td className="px-6 py-4 text-sm">

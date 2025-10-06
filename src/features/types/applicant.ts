@@ -69,6 +69,7 @@ export interface ApplicantListItemDto {
   deleted?: boolean;
   deletedAt?: string | null;
   timestamp?: string;
+  
 }
 
 export interface ApplicantDetailDto {

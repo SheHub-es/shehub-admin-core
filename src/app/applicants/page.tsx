@@ -248,8 +248,11 @@ export default function Page() {
   >([]);
   const [deletedLoading, setDeletedLoading] = useState(false);
   const [deletedError, setDeletedError] = useState<string | null>(null);
+  // 👇 AGREGAR ESTA LÍNEA
+const [applicantProfiles, setApplicantProfiles] = useState<Map<number, string>>(new Map());
 
   const notificationCount = useNotificationBadge(deletedApplicants);
+
 
   useEffect(() => {
     const token =
@@ -328,7 +331,36 @@ export default function Page() {
     const index = (email?.length || 0) % colors.length;
     return colors[index];
   };
+const loadProfilesForApplicants = async (apps: ApplicantListItemDto[]) => {
+  const profileMap = new Map<number, string>();
 
+  // Procesar en lotes de 5 applicants a la vez
+  const BATCH_SIZE = 5;
+
+  for (let i = 0; i < apps.length; i += BATCH_SIZE) {
+    const batch = apps.slice(i, i + BATCH_SIZE);
+
+    await Promise.all(
+      batch.map(async (app) => {
+        try {
+          const profile = await applicantProfileApi.getByApplicantId(app.id);
+          if (profile?.rolDeseado) {
+            profileMap.set(app.id, profile.rolDeseado);
+          }
+        } catch {
+          // No tiene perfil, no pasa nada
+        }
+      })
+    );
+
+    // Pequeña pausa entre lotes
+    if (i + BATCH_SIZE < apps.length) {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  }
+
+  setApplicantProfiles(profileMap);
+};
   useEffect(() => {
     const load = async () => {
       try {
@@ -337,14 +369,17 @@ export default function Page() {
           setDeletedError(null);
           const data = await applicantApi.getDeleted();
           setDeletedApplicants(data);
+         
         } else if (filters.statusFilter === "all") {
           setDeletedLoading(true);
           setDeletedError(null);
           const deleted = await applicantApi.getDeleted();
           await refreshActive();
           setDeletedApplicants(deleted);
+        
         } else {
           await refreshActive();
+        
         }
       } catch (e) {
         setDeletedError(
@@ -357,23 +392,37 @@ export default function Page() {
     load();
   }, [filters.statusFilter, refreshActive]);
 
+  
   const sourceApplicants = useMemo(() => {
     if (filters.statusFilter === "deleted") return deletedApplicants;
     if (filters.statusFilter === "all")
       return [...applicants, ...deletedApplicants];
     return applicants;
   }, [filters.statusFilter, applicants, deletedApplicants]);
+  useEffect(() => {
+  if (sourceApplicants.length > 0) {
+    loadProfilesForApplicants(sourceApplicants);
+  }
+}, [sourceApplicants.length]);
 
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
-  const filteredApplicants = useMemo(
-    () => applyFilters(sourceApplicants),
-    [applyFilters, sourceApplicants]
-  );
+const filteredApplicants = useMemo(() => {
+  const filtered = applyFilters(sourceApplicants); // 👈 Sin punto y coma, es asignación
+  return filtered.sort((a, b) => {
+    const dateA = parseApiTimestamp(a.timestamp as string);
+    const dateB = parseApiTimestamp(b.timestamp as string);
+    
+    if (!dateA || !dateB) return 0;
+    return dateB.getTime() - dateA.getTime(); // Descendente (nuevos primero)
+  });
+}, [applyFilters, sourceApplicants]);
   const totalPages = Math.ceil(filteredApplicants.length / pageSize);
+
   const paginatedApplicants = useMemo(() => {
     const start = (currentPage - 1) * pageSize;
     return filteredApplicants.slice(start, start + pageSize);
+
   }, [filteredApplicants, currentPage, pageSize]);
 
   const isLoading =
@@ -476,6 +525,7 @@ export default function Page() {
       try {
         const data = await applicantApi.getDeleted();
         setDeletedApplicants(data);
+     
       } finally {
         setDeletedLoading(false);
       }
@@ -485,11 +535,13 @@ export default function Page() {
         const deleted = await applicantApi.getDeleted();
         await refreshActive();
         setDeletedApplicants(deleted);
+        
       } finally {
         setDeletedLoading(false);
       }
     } else {
       await refreshActive();
+   
     }
 
     if (statsRef.current) await statsRef.current.refresh();
@@ -801,6 +853,7 @@ export default function Page() {
                 <>
                   <ApplicantList
                     applicants={paginatedApplicants}
+               applicantProfiles={applicantProfiles}
                     onEdit={handleEdit}
                     onDelete={handleDeleteConfirm}
                     onView={handleView}
@@ -1051,18 +1104,29 @@ export default function Page() {
             )}
           </Modal>
 
-          <ProfileModal
-            isOpen={activeModal === "profile"}
-            onClose={() => {
-              setActiveModal(null);
-              setSelectedApplicant(null);
-              setSelectedProfile(null);
-            }}
-            applicant={selectedApplicant}
-            profile={selectedProfile}
-            isLoading={profileLoading}
-            onSaved={(updated) => setSelectedProfile(updated)}
-          />
+        <ProfileModal
+  isOpen={activeModal === "profile"}
+  onClose={() => {
+    setActiveModal(null);
+    setSelectedApplicant(null);
+    setSelectedProfile(null);
+  }}
+  applicant={selectedApplicant}
+  profile={selectedProfile}
+  isLoading={profileLoading}
+  onSaved={(updated) => {
+    setSelectedProfile(updated);
+    if (selectedApplicant) {
+      const newMap = new Map(applicantProfiles);
+      if (updated.rolDeseado) {
+        newMap.set(selectedApplicant.id, updated.rolDeseado);
+      } else {
+        newMap.delete(selectedApplicant.id);
+      }
+      setApplicantProfiles(newMap);
+    }
+  }}
+/>
           <AdminRecordsModal
             isOpen={seguimientoModal}
             onClose={() => {
